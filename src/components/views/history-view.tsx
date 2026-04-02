@@ -93,8 +93,8 @@ export function HistoryView({
       </Card>
 
       <Card className="min-h-0 flex-1 overflow-hidden">
-        <CardContent className="min-h-0 p-0">
-          <div className="h-full">
+        <CardContent className="min-h-0 p-0 h-full">
+          <div className="h-full overflow-y-auto custom-scrollbar">
             <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow>

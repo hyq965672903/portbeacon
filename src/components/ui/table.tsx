@@ -13,7 +13,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b [&_tr]:border-[var(--border)]", className)} {...props} />
+  <thead ref={ref} className={cn("[&_tr]:border-b [&_tr]:border-[var(--border)]/[0.5]", className)} {...props} />
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -23,7 +23,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("[&_tr:last-child]:border-0 [&_tr]:border-b [&_tr]:border-[var(--border)]", className)}
+    className={cn("[&_tr:last-child]:border-0 [&_tr]:border-b [&_tr]:border-[var(--border)]/[0.5]", className)}
     {...props}
   />
 ));
@@ -33,7 +33,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("transition-colors hover:bg-white/[0.02] data-[state=selected]:bg-white/[0.03]", className)}
+      className={cn("transition-colors hover:bg-white/[0.04] data-[state=selected]:bg-white/[0.05]", className)}
       {...props}
     />
   ),
@@ -45,7 +45,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-10 px-3 text-left align-middle text-[11px] font-medium tracking-[0.16em] text-[var(--muted-foreground)] uppercase",
+        "h-12 px-4 text-left align-middle text-[12px] font-medium tracking-[0.1em] text-[var(--muted-foreground)] uppercase",
         className,
       )}
       {...props}
@@ -56,7 +56,7 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn("px-3 py-2.5 align-middle", className)} {...props} />
+    <td ref={ref} className={cn("px-4 py-4 align-middle", className)} {...props} />
   ),
 );
 TableCell.displayName = "TableCell";

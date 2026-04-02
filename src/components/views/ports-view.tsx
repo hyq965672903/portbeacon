@@ -77,7 +77,7 @@ export function PortsView({
               {copy.ports.empty}
             </div>
           ) : (
-            <div className="h-full">
+            <div className="h-full overflow-y-auto custom-scrollbar">
               <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>

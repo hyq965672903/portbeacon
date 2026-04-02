@@ -93,7 +93,7 @@ function App() {
             onThemeChange={setThemeMode}
           />
 
-          <div className="min-h-0 overflow-auto rounded-[28px] border border-[var(--border)] bg-[var(--panel)] px-4 py-5 shadow-[0_40px_100px_rgba(0,0,0,0.2)] backdrop-blur-xl md:px-6">
+          <div className="min-h-0 flex flex-col overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--panel)] px-4 py-5 shadow-[0_40px_100px_rgba(0,0,0,0.2)] backdrop-blur-xl md:p-8">
             {view === "ports" && (
               <PortsView
                 copy={copy}
