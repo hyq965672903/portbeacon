@@ -7,9 +7,23 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 dist-ssr
+coverage
+.vite
+.cache
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local overrides
 *.local
 
 # Editor directories and files
@@ -17,8 +31,20 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+
+# Tauri / Rust local artifacts
+src-tauri/target
+src-tauri/gen
+
+# Package manager files
+.pnpm-store
