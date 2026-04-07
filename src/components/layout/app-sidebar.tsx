@@ -1,5 +1,4 @@
-import { SquareTerminal } from "lucide-react";
-
+import { PortBeaconLogo } from "@/components/brand/portbeacon-logo";
 import { AppCopy, NavItem, View } from "@/types/app";
 import { cn } from "@/lib/utils";
 
@@ -64,8 +63,8 @@ export function AppSidebar({
   return (
     <aside className="flex h-full min-h-0 w-full flex-col overflow-auto rounded-lg border border-[var(--border)] bg-[var(--sidebar)] p-2.5 shadow-[0_28px_72px_rgba(0,0,0,0.25)] backdrop-blur">
       <div className="mb-3 flex items-center gap-2 px-1.5">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/12 text-[var(--primary)] shadow-[inset_0_0_0_1px_rgba(19,217,196,0.22)]">
-          <SquareTerminal className="size-4.5" />
+        <div className="flex size-10 shrink-0 items-center justify-center">
+          <PortBeaconLogo className="size-10 drop-shadow-[0_0_18px_rgba(19,217,196,0.2)]" />
         </div>
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold">{copy.brand.title}</p>
