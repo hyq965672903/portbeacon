@@ -30,11 +30,34 @@ pub struct PortService {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ProcessTreeNode {
+    pid: u32,
+    parent_pid: Option<u32>,
+    name: String,
+    command: Option<String>,
+    executable: Option<String>,
+    children: Vec<ProcessTreeNode>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PortListResponse {
     items: Vec<PortService>,
     total: usize,
     page: usize,
     page_size: usize,
+}
+
+#[tauri::command]
+pub fn get_process_tree(pid: u32) -> Result<Option<ProcessTreeNode>, String> {
+    if pid == 0 {
+        return Ok(None);
+    }
+
+    let mut system = System::new_all();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+
+    Ok(build_process_tree(&system, pid))
 }
 
 #[tauri::command]
@@ -160,6 +183,86 @@ fn build_service(system: &System, id: String, port: u16, pid: u32) -> PortServic
         cpu,
         memory,
         updated_at: "now".to_string(),
+    }
+}
+
+fn build_process_tree(system: &System, pid: u32) -> Option<ProcessTreeNode> {
+    if pid == 0 {
+        return None;
+    }
+
+    let mut chain = Vec::new();
+    let mut current_pid = Pid::from_u32(pid);
+    let mut seen = HashSet::new();
+
+    loop {
+        if !seen.insert(current_pid.as_u32()) {
+            break;
+        }
+
+        let Some(process) = system.process(current_pid) else {
+            break;
+        };
+
+        let parent_pid = process.parent();
+        chain.push(ProcessTreeNode {
+            pid: process.pid().as_u32(),
+            parent_pid: parent_pid.map(Pid::as_u32),
+            name: process_name(process),
+            command: process_command(process),
+            executable: process.exe().map(|path| path.display().to_string()),
+            children: Vec::new(),
+        });
+
+        let Some(next_pid) = parent_pid else {
+            break;
+        };
+
+        current_pid = next_pid;
+    }
+
+    chain.into_iter().rev().fold(None, |child, mut parent| {
+        if let Some(child) = child {
+            parent.children.push(child);
+        }
+        Some(parent)
+    })
+}
+
+fn process_name(process: &sysinfo::Process) -> String {
+    let name = process
+        .name()
+        .to_string_lossy()
+        .to_string()
+        .chars()
+        .take(80)
+        .collect::<String>()
+        .trim()
+        .to_string();
+
+    if name.is_empty() {
+        "Unknown process".to_string()
+    } else {
+        name
+    }
+}
+
+fn process_command(process: &sysinfo::Process) -> Option<String> {
+    let command = process
+        .cmd()
+        .iter()
+        .map(|part| part.to_string_lossy())
+        .collect::<Vec<_>>()
+        .join(" ")
+        .trim()
+        .chars()
+        .take(500)
+        .collect::<String>();
+
+    if command.is_empty() {
+        None
+    } else {
+        Some(command)
     }
 }
 

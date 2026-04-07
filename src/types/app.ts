@@ -6,6 +6,15 @@ export type View = "ports" | "history" | "settings" | "help";
 export type ServiceStatus = "active";
 export type HistoryAction = "stopped" | "started" | "ignored";
 
+export type ProcessTreeNode = {
+  pid: number;
+  parentPid: number | null;
+  name: string;
+  command: string | null;
+  executable: string | null;
+  children: ProcessTreeNode[];
+};
+
 export type Service = {
   id: string;
   port: number;

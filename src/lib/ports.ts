@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { Service } from "@/types/app";
+import { ProcessTreeNode, Service } from "@/types/app";
 
 export type PortListResponse = {
   items: Service[];
@@ -17,4 +17,8 @@ export type PortListRequest = {
 
 export function listPorts(request: PortListRequest) {
   return invoke<PortListResponse>("list_ports", { request });
+}
+
+export function getProcessTree(pid: number) {
+  return invoke<ProcessTreeNode | null>("get_process_tree", { pid });
 }
