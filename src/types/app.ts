@@ -4,7 +4,9 @@ import { messages } from "@/lib/i18n";
 
 export type View = "ports" | "history" | "settings" | "help";
 export type ServiceStatus = "active";
-export type HistoryAction = "stopped" | "started" | "ignored";
+export type HistoryAction = "detected" | "released" | "replaced" | "stopped" | "ignored" | "failed";
+export type HistorySource = "manual" | "monitor" | "policy" | "system";
+export type HistoryResult = "success" | "failed" | "pending";
 
 export type ProcessTreeNode = {
   pid: number;
@@ -30,12 +32,17 @@ export type Service = {
 
 export type HistoryEntry = {
   id: string;
-  timestamp: string;
+  timestamp: number;
   port: number;
-  pid: number;
+  protocol: string;
+  pid: number | null;
+  processName: string;
   action: HistoryAction;
-  executor: string;
+  source: HistorySource;
+  result: HistoryResult;
   location: string;
+  reason: string | null;
+  error: string | null;
 };
 
 export type NavItem = {

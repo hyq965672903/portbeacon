@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { ProcessTreeNode, Service } from "@/types/app";
+import type { ProcessTreeNode, Service } from "@/types/app";
 
 export type PortListResponse = {
   items: Service[];

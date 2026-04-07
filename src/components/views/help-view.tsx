@@ -1,52 +1,56 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { AppCopy } from "@/types/app";
+import { Card, CardContent } from "@/components/ui/card";
+import type { AppCopy } from "@/types/app";
 
 type HelpViewProps = {
   copy: AppCopy;
 };
 
+function GuideStep({ text }: { text: string }) {
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/58 px-3 py-2.5 text-sm leading-5 text-[var(--muted-foreground)]">
+      {text}
+    </div>
+  );
+}
+
 export function HelpView({ copy }: HelpViewProps) {
   return (
-    <div className="grid h-full min-h-0 gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-      <Card className="min-h-0">
-        <CardHeader className="pb-3">
-          <CardDescription>{copy.help.quickGuide}</CardDescription>
-          <CardTitle>{copy.help.howToUse}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm text-[var(--muted-foreground)] md:grid-cols-2">
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/70 p-3">{copy.help.step1}</div>
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/70 p-3">{copy.help.step2}</div>
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/70 p-3">{copy.help.step3}</div>
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/70 p-3">{copy.help.step4}</div>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-3">
+    <div className="h-full min-h-0 overflow-y-auto custom-scrollbar">
+      <div className="mx-auto grid w-full max-w-[980px] gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
         <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>{copy.help.healthCheck}</CardDescription>
-            <CardTitle>{copy.help.recommended}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 p-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
+                {copy.help.quickGuide}
+              </p>
+              <h2 className="mt-1 text-lg font-semibold">{copy.help.howToUse}</h2>
+            </div>
+            <div className="grid gap-2">
+              <GuideStep text={copy.help.step1} />
+              <GuideStep text={copy.help.step2} />
+              <GuideStep text={copy.help.step3} />
+              <GuideStep text={copy.help.step4} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex h-full min-h-[220px] flex-col gap-3 p-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
+                {copy.help.healthCheck}
+              </p>
+              <h2 className="mt-1 text-lg font-semibold">{copy.help.recommended}</h2>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="success">{copy.help.safeMode}</Badge>
               <Badge variant="secondary">{copy.help.keepLogs}</Badge>
               <Badge variant="outline">{copy.help.confirmUnknown}</Badge>
             </div>
-            <Separator />
-            <p className="text-sm text-[var(--muted-foreground)]">{copy.help.note}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>{copy.help.healthCheck}</CardDescription>
-            <CardTitle>PortBeacon</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-[var(--muted-foreground)]">
-            <p>{copy.settings.description}</p>
+            <p className="mt-auto rounded-lg border border-[var(--border)] bg-[var(--secondary)]/58 p-3 text-xs leading-5 text-[var(--muted-foreground)]">
+              {copy.help.note}
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { useEffect, useState } from "react";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { WorkspaceHeader } from "@/components/layout/workspace-header";
@@ -6,12 +7,12 @@ import { HelpView } from "@/components/views/help-view";
 import { HistoryView } from "@/components/views/history-view";
 import { PortsView } from "@/components/views/ports-view";
 import { SettingsView } from "@/components/views/settings-view";
-import { historyEntries } from "@/data/history-data";
 import { navItems } from "@/data/menu";
 import { useLayoutMode } from "@/hooks/use-layout-mode";
+import { listHistory } from "@/lib/history";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
 import { listPorts } from "@/lib/ports";
-import { Service, View } from "@/types/app";
+import { HistoryAction, HistoryEntry, Service, View } from "@/types/app";
 
 function App() {
   const [view, setView] = useState<View>("ports");
@@ -22,6 +23,10 @@ function App() {
   const [portFilter, setPortFilter] = useState("all");
   const [rangeFilter, setRangeFilter] = useState("24h");
   const [historySearch, setHistorySearch] = useState("");
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [portsSearch, setPortsSearch] = useState("");
   const [services, setServices] = useState<Service[]>([]);
   const [portsPage, setPortsPage] = useState(1);
@@ -108,18 +113,47 @@ function App() {
     };
   }, [portsPage, portsPageSize, portsRefreshKey, portsSearch]);
 
-  const filteredHistory = useMemo(() => {
-    return historyEntries.filter((entry) => {
-      const matchesAction = historyFilter === "all" || entry.action === historyFilter;
-      const matchesPort = portFilter === "all" || String(entry.port) === portFilter;
-      const keyword = historySearch.trim().toLowerCase();
-      const matchesKeyword =
-        !keyword ||
-        `${entry.location} ${entry.executor} ${entry.port} ${entry.pid}`.toLowerCase().includes(keyword);
+  useEffect(() => {
+    let cancelled = false;
+    setHistoryLoading(true);
 
-      return matchesAction && matchesPort && matchesKeyword;
+    listHistory({
+      action: historyFilter === "all" ? "all" : (historyFilter as HistoryAction),
+      limit: 300,
+      port: portFilter === "all" ? undefined : Number(portFilter),
+      range: rangeFilter,
+      search: historySearch,
+    })
+      .then((entries) => {
+        if (cancelled) return;
+        setHistoryEntries(entries);
+        setHistoryError(null);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setHistoryEntries([]);
+        setHistoryError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [historyFilter, historyRefreshKey, historySearch, portFilter, rangeFilter]);
+
+  useEffect(() => {
+    const unlistenPromise = listen("history-updated", () => {
+      setHistoryRefreshKey((value) => value + 1);
     });
-  }, [historyFilter, portFilter, historySearch]);
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten()).catch(() => undefined);
+    };
+  }, []);
 
   return (
     <div className="portbeacon-app h-screen overflow-hidden bg-transparent text-[var(--foreground)]" data-layout-mode={layoutMode}>
@@ -161,14 +195,17 @@ function App() {
             {view === "history" && (
               <HistoryView
                 copy={copy}
-                entries={filteredHistory}
+                entries={historyEntries}
+                error={historyError}
                 historyFilter={historyFilter}
+                loading={historyLoading}
                 portFilter={portFilter}
                 rangeFilter={rangeFilter}
                 search={historySearch}
                 onHistoryFilterChange={setHistoryFilter}
                 onPortFilterChange={setPortFilter}
                 onRangeFilterChange={setRangeFilter}
+                onRefresh={() => setHistoryRefreshKey((value) => value + 1)}
                 onSearchChange={setHistorySearch}
               />
             )}
