@@ -17,10 +17,10 @@ function SettingRow({
   control: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/65 p-4 md:flex-row md:items-center md:justify-between">
-      <div className="max-w-xl">
-        <p className="font-medium">{title}</p>
-        <p className="mt-1 text-sm text-[var(--muted-foreground)]">{description}</p>
+    <div className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/65 p-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="max-w-2xl">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="mt-1 text-xs text-[var(--muted-foreground)]">{description}</p>
       </div>
       <div>{control}</div>
     </div>
@@ -41,14 +41,14 @@ function StatusLine({
   sublabel: string;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/70 px-4 py-3">
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-black/25">
+    <div className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--secondary)]/70 px-3 py-2.5">
+      <div className="flex items-center gap-2.5">
+        <div className="flex size-8 items-center justify-center rounded-lg bg-black/25">
           <Icon className={cn("size-4", accent)} />
         </div>
         <div>
           <p className="text-sm font-medium">{label}</p>
-          <p className="text-xs text-[var(--muted-foreground)]">{sublabel}</p>
+          <p className="text-[11px] text-[var(--muted-foreground)]">{sublabel}</p>
         </div>
       </div>
       <p className={cn("text-sm font-medium", accent)}>{value}</p>
@@ -72,19 +72,19 @@ export function SettingsView({
   onStrictModeChange,
 }: SettingsViewProps) {
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_340px]">
-      <div className="space-y-5">
-        <section>
-          <h1 className="text-3xl font-semibold">{copy.settings.title}</h1>
-          <p className="mt-2 text-sm text-[var(--muted-foreground)]">{copy.settings.description}</p>
+    <div className="grid h-full min-h-0 gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,340px)]">
+      <div className="flex min-h-0 flex-col gap-3 overflow-auto custom-scrollbar pr-1">
+        <section className="rounded-lg border border-[var(--border)] bg-[var(--card)]/60 px-4 py-3">
+          <h1 className="text-xl font-semibold">{copy.settings.title}</h1>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">{copy.settings.description}</p>
         </section>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardDescription>{copy.settings.policyDesc}</CardDescription>
             <CardTitle>{copy.settings.policy}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-3">
             <SettingRow
               title={copy.settings.autoKill}
               description={copy.settings.autoKillDesc}
@@ -99,15 +99,15 @@ export function SettingsView({
               title={copy.settings.logRetention}
               description={copy.settings.logRetentionDesc}
               control={
-                <div className="w-[180px]">
+                <div className="w-[152px]">
                   <Select defaultValue="7d">
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="24h">24 小时</SelectItem>
-                      <SelectItem value="7d">7 天</SelectItem>
-                      <SelectItem value="30d">30 天</SelectItem>
+                      <SelectItem value="24h">{copy.settings.retention24h}</SelectItem>
+                      <SelectItem value="7d">{copy.settings.retention7d}</SelectItem>
+                      <SelectItem value="30d">{copy.settings.retention30d}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -117,32 +117,32 @@ export function SettingsView({
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardDescription>{copy.settings.terminalConfigDesc}</CardDescription>
             <CardTitle>{copy.settings.terminalConfig}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-2xl border border-[var(--border)] bg-[#06090d] p-4 font-mono text-sm text-[var(--muted-foreground)]">
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border border-[var(--border)] bg-[#06090d] p-3 font-mono text-xs text-[var(--muted-foreground)]">
               <p>HOST=0.0.0.0</p>
               <p>PORT_SCAN_RANGE=3000-9000</p>
               <p>SAFE_MODE=true</p>
               <p>TIMEOUT=10.0</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="secondary">{copy.controls.resetParams}</Button>
-              <Button>{copy.controls.saveChanges}</Button>
+              <Button variant="secondary" size="sm">{copy.controls.resetParams}</Button>
+              <Button size="sm">{copy.controls.saveChanges}</Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardDescription>{copy.settings.status}</CardDescription>
             <CardTitle>{copy.settings.realtime}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <StatusLine
               icon={ShieldCheck}
               label={copy.settings.guardService}
@@ -168,11 +168,11 @@ export function SettingsView({
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardDescription>{copy.settings.desktopDesc}</CardDescription>
             <CardTitle>{copy.settings.desktop}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-[var(--muted-foreground)]">
+          <CardContent className="space-y-2 text-sm text-[var(--muted-foreground)]">
             <p>macOS Sequoia 15.3</p>
             <p>Tauri Runtime 2.x</p>
             <p>Watcher latency 250ms</p>

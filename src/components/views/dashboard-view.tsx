@@ -25,7 +25,7 @@ function MetricCard({
       <CardHeader className="relative pb-2 pt-5">
         <div className="flex items-center justify-between gap-3">
           <CardDescription>{label}</CardDescription>
-          <div className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-[var(--foreground)] dark:bg-black/20">
+          <div className="flex size-10 items-center justify-center rounded-lg bg-white/50 text-[var(--foreground)] dark:bg-black/20">
             <Icon className="size-4" />
           </div>
         </div>
@@ -96,7 +96,7 @@ export function DashboardView({ copy, services }: DashboardViewProps) {
           </CardHeader>
           <CardContent className="grid gap-3 pt-0 md:grid-cols-2">
             {services.slice(0, 4).map((service) => (
-              <div key={service.id} className="rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/80 p-3">
+              <div key={service.id} className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/80 p-3">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{service.name}</p>
@@ -130,14 +130,14 @@ export function DashboardView({ copy, services }: DashboardViewProps) {
               <p className="mt-1 text-base font-semibold">{copy.dashboard.mobilePreview}</p>
             </div>
             <CardContent className="flex justify-center p-4">
-              <div className="w-[220px] rounded-[30px] border border-[var(--border)] bg-[#05080b] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+              <div className="w-[220px] rounded-lg border border-[var(--border)] bg-[#05080b] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
                 <div className="mb-2 flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
                   <span>09:41</span>
                   <span>PortBeacon</span>
                   <Wifi className="size-3.5" />
                 </div>
                 <div className="space-y-2">
-                  <div className="rounded-2xl bg-[var(--secondary)] p-3">
+                  <div className="rounded-lg bg-[var(--secondary)] p-3">
                     <p className="text-xs text-[var(--muted-foreground)]">{copy.dashboard.openPorts}</p>
                     <div className="mt-2 flex items-end justify-between">
                       <p className="text-2xl font-semibold">04</p>
@@ -147,7 +147,7 @@ export function DashboardView({ copy, services }: DashboardViewProps) {
                   {services.slice(0, 3).map((service) => (
                     <div
                       key={service.id}
-                      className="rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/75 p-2.5"
+                      className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/75 p-2.5"
                     >
                       <div className="flex items-center justify-between">
                         <div>

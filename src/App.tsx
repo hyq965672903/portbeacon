@@ -7,6 +7,7 @@ import { HistoryView } from "@/components/views/history-view";
 import { PortsView } from "@/components/views/ports-view";
 import { SettingsView } from "@/components/views/settings-view";
 import { historyEntries, navItems, services } from "@/data/mock";
+import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
 import { View } from "@/types/app";
 
@@ -25,6 +26,7 @@ function App() {
   const [strictMode, setStrictMode] = useState(false);
 
   const copy = messages[locale];
+  const layoutMode = useLayoutMode();
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("portbeacon-locale");
@@ -73,27 +75,27 @@ function App() {
   }, [historyFilter, portFilter, historySearch]);
 
   return (
-    <div className="h-screen overflow-hidden bg-transparent text-[var(--foreground)]">
-      <div className="mx-auto grid h-full max-w-[1760px] grid-cols-[minmax(220px,2fr)_minmax(0,8fr)] gap-4 overflow-hidden px-3 py-3 md:px-5 md:py-5">
+    <div className="portbeacon-app h-screen overflow-hidden bg-transparent text-[var(--foreground)]" data-layout-mode={layoutMode}>
+      <div className="portbeacon-shell mx-auto grid h-full overflow-hidden">
         <AppSidebar
           copy={copy}
-          locale={locale}
           currentView={view}
           navItems={navItems}
           onChangeView={setView}
         />
 
-        <main className="grid min-h-0 min-w-0 grid-rows-[minmax(120px,1fr)_minmax(0,9fr)] gap-4 overflow-hidden">
+        <main className="portbeacon-main grid min-h-0 min-w-0 overflow-hidden">
           <WorkspaceHeader
             copy={copy}
             locale={locale}
+            currentView={view}
             onLocaleChange={setLocale}
             themeMode={themeMode}
             resolvedTheme={resolvedTheme}
             onThemeChange={setThemeMode}
           />
 
-          <div className="min-h-0 flex flex-col overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--panel)] px-4 py-5 shadow-[0_40px_100px_rgba(0,0,0,0.2)] backdrop-blur-xl md:p-8">
+          <div className="portbeacon-content min-h-0 flex flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--panel)] shadow-[0_36px_96px_rgba(0,0,0,0.24)] backdrop-blur-xl">
             {view === "ports" && (
               <PortsView
                 copy={copy}

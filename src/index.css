@@ -1,13 +1,13 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 :root,
 html[data-theme="dark"] {
   --background: #05090d;
   --foreground: #e7f7f6;
-  --sidebar: rgba(0, 0, 0, 0.44);
-  --panel: rgba(5, 8, 12, 0.82);
-  --card: rgba(15, 19, 24, 0.9);
+  --sidebar: rgba(2, 7, 12, 0.74);
+  --panel: rgba(6, 10, 14, 0.84);
+  --card: rgba(13, 18, 23, 0.9);
   --card-foreground: #e7f7f6;
   --popover: #0c1217;
   --popover-foreground: #edf7f7;
@@ -24,24 +24,25 @@ html[data-theme="dark"] {
   --input: #151c22;
   --ring: #13d9c4;
   --radius: 1rem;
+
   color: var(--foreground);
   background:
-    radial-gradient(circle at top left, rgba(19, 217, 196, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(32, 117, 255, 0.08), transparent 24%),
+    linear-gradient(135deg, rgba(19, 217, 196, 0.08) 0%, transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 22%),
     linear-gradient(180deg, #071015 0%, #04070a 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  font-family: "Manrope", "Segoe UI", sans-serif;
 }
 
 html[data-theme="light"] {
   --background: #eff4f4;
   --foreground: #0d1719;
-  --sidebar: rgba(255, 255, 255, 0.7);
-  --panel: rgba(255, 255, 255, 0.72);
-  --card: rgba(255, 255, 255, 0.9);
+  --sidebar: rgba(255, 255, 255, 0.76);
+  --panel: rgba(255, 255, 255, 0.78);
+  --card: rgba(255, 255, 255, 0.92);
   --card-foreground: #0d1719;
   --popover: #ffffff;
   --popover-foreground: #0d1719;
@@ -75,8 +76,8 @@ body {
   min-width: 320px;
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(19, 217, 196, 0.09), transparent 28%),
-    radial-gradient(circle at top right, rgba(32, 117, 255, 0.08), transparent 24%),
+    linear-gradient(135deg, rgba(19, 217, 196, 0.07) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, transparent 20%),
     linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--background) 92%, black 8%) 100%);
   color: var(--foreground);
 }
@@ -87,11 +88,11 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(color-mix(in srgb, var(--foreground) 6%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--foreground) 6%, transparent) 1px, transparent 1px);
-  background-size: 120px 120px;
-  mask-image: radial-gradient(circle at center, black 40%, transparent 92%);
-  opacity: 0.35;
+    linear-gradient(color-mix(in srgb, var(--foreground) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--foreground) 4%, transparent) 1px, transparent 1px);
+  background-size: 96px 96px;
+  mask-image: radial-gradient(circle at center, black 48%, transparent 92%);
+  opacity: 0.34;
 }
 
 #root {
@@ -99,16 +100,79 @@ body::before {
   overflow: hidden;
 }
 
+.portbeacon-app {
+  --shell-sidebar: 204px;
+  --shell-gap: 10px;
+  --shell-padding: 10px;
+  --shell-max-width: 100%;
+  --header-height: 58px;
+  --content-padding: 10px;
+}
+
+.portbeacon-app[data-layout-mode="compact"] {
+  --shell-sidebar: 172px;
+  --shell-gap: 6px;
+  --shell-padding: 6px;
+  --shell-max-width: 100%;
+  --header-height: 50px;
+  --content-padding: 6px;
+}
+
+.portbeacon-app[data-layout-mode="regular"] {
+  --shell-sidebar: 204px;
+  --shell-gap: 10px;
+  --shell-padding: 10px;
+  --shell-max-width: 100%;
+  --header-height: 58px;
+  --content-padding: 10px;
+}
+
+.portbeacon-app[data-layout-mode="wide"] {
+  --shell-sidebar: 232px;
+  --shell-gap: 12px;
+  --shell-padding: 12px;
+  --shell-max-width: 1680px;
+  --header-height: 62px;
+  --content-padding: 12px;
+}
+
+.portbeacon-shell {
+  grid-template-columns: var(--shell-sidebar) minmax(0, 1fr);
+  gap: var(--shell-gap);
+  max-width: var(--shell-max-width);
+  padding: var(--shell-padding);
+}
+
+.portbeacon-main {
+  grid-template-rows: var(--header-height) minmax(0, 1fr);
+  gap: var(--shell-gap);
+}
+
+.portbeacon-content {
+  padding: var(--content-padding);
+}
+
+@media (min-width: 1920px) {
+  .portbeacon-app[data-layout-mode="wide"] {
+    --shell-max-width: 1760px;
+  }
+}
+
 ::selection {
   background: rgba(19, 217, 196, 0.35);
   color: white;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Manrope", "Segoe UI", sans-serif;
 }
 
 .font-mono {
   font-family: "JetBrains Mono", monospace;
 }
 
-/* Sleek custom scrollbars */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(136, 136, 136, 0.4) transparent;
