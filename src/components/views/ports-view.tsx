@@ -73,14 +73,14 @@ function ProcessTree({ node, depth = 0 }: { node: ProcessTreeNode; depth?: numbe
   );
 }
 
-type ProcessTreeStateProps = {
+type RenderProcessTreeStateInput = {
   copy: AppCopy;
   error: string | null;
   loading: boolean;
   tree: ProcessTreeNode | null;
 };
 
-function ProcessTreeState({ copy, error, loading, tree }: ProcessTreeStateProps) {
+function renderProcessTreeState({ copy, error, loading, tree }: RenderProcessTreeStateInput) {
   if (loading) {
     return (
       <div className="rounded-lg bg-[var(--secondary)] p-3 text-xs leading-5 text-[var(--muted-foreground)]">
@@ -388,12 +388,12 @@ export function PortsView({
                   <GitBranch className="size-4 text-[var(--primary)]" />
                   {copy.ports.processTree}
                 </div>
-                <ProcessTreeState
-                  copy={copy}
-                  error={processTreeError}
-                  loading={processTreeLoading}
-                  tree={processTree}
-                />
+                {renderProcessTreeState({
+                  copy,
+                  error: processTreeError,
+                  loading: processTreeLoading,
+                  tree: processTree,
+                })}
               </section>
 
               <section className="rounded-lg border border-[var(--border)] bg-[var(--card)]/72 p-3">
