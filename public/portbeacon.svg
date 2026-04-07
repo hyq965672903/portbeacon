@@ -1,25 +1,35 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="mark" x1="26" y1="14" x2="102" y2="114" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#9ff8ea"/>
-      <stop offset="0.48" stop-color="#13d9c4"/>
-      <stop offset="1" stop-color="#087f77"/>
+    <linearGradient id="jade" x1="22" x2="106" y1="20" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D5F2E3"/>
+      <stop offset="0.5" stop-color="#45B787"/>
+      <stop offset="1" stop-color="#1A6840"/>
     </linearGradient>
-    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
-      <feGaussianBlur stdDeviation="7" result="blur"/>
+    <linearGradient id="gold" x1="42" x2="86" y1="38" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7E8AA"/>
+      <stop offset="1" stop-color="#C8A45D"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
   </defs>
-  <rect x="8" y="8" width="112" height="112" rx="34" fill="#071015"/>
-  <rect x="8" y="8" width="112" height="112" rx="34" fill="#13D9C4" fill-opacity="0.08"/>
-  <rect x="10.5" y="10.5" width="107" height="107" rx="31.5" stroke="url(#mark)" stroke-width="5" stroke-opacity="0.65"/>
-  <path d="M35 84H64.5C79.7 84 92 71.8 92 56.5C92 43 82.1 31.5 68.8 29.5" stroke="url(#mark)" stroke-width="8" stroke-linecap="round"/>
-  <path d="M35 44H58.5C66.7 44 73 50.2 73 57.7C73 65.2 66.7 71.4 58.5 71.4H48" stroke="url(#mark)" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="36" cy="44" r="6.5" fill="#E6FFF9" filter="url(#glow)"/>
-  <circle cx="36" cy="84" r="6.5" fill="#E6FFF9" filter="url(#glow)"/>
-  <circle cx="92" cy="56.5" r="8" fill="#13D9C4" filter="url(#glow)"/>
-  <path d="M98 42C104 45 108.5 50.2 110.5 56.5C108.5 62.8 104 68 98 71" stroke="#9FF8EA" stroke-width="4.8" stroke-linecap="round" opacity="0.95"/>
+  <rect x="8" y="8" width="112" height="112" rx="34" fill="#0B1F24"/>
+  <rect x="8" y="8" width="112" height="112" rx="34" fill="#45B787" fill-opacity="0.08"/>
+  <rect x="11" y="11" width="106" height="106" rx="31" stroke="url(#jade)" stroke-width="4" stroke-opacity="0.58"/>
+  <path d="M34 64H50" stroke="url(#jade)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M78 64H94" stroke="url(#jade)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M64 28V44" stroke="url(#jade)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M64 84V100" stroke="url(#jade)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M50 64L64 44L78 64L64 84L50 64Z" stroke="url(#gold)" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="34" cy="64" r="7" fill="#D5F2E3" filter="url(#glow)"/>
+  <circle cx="94" cy="64" r="7" fill="#D5F2E3" filter="url(#glow)"/>
+  <circle cx="64" cy="28" r="7" fill="#D5F2E3" filter="url(#glow)"/>
+  <circle cx="64" cy="100" r="7" fill="#D5F2E3" filter="url(#glow)"/>
+  <circle cx="64" cy="64" r="9" fill="#45B787" filter="url(#glow)"/>
+  <path d="M43 43C37.5 48.6 34.5 55.7 34.5 64C34.5 72.3 37.5 79.4 43 85" stroke="#D5F2E3" stroke-width="4.4" stroke-linecap="round" opacity="0.55"/>
+  <path d="M85 43C90.5 48.6 93.5 55.7 93.5 64C93.5 72.3 90.5 79.4 85 85" stroke="#D5F2E3" stroke-width="4.4" stroke-linecap="round" opacity="0.55"/>
 </svg>
