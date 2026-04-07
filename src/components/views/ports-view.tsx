@@ -1,141 +1,86 @@
-import { AlertTriangle, Gauge, Search, Server, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
+import { RefreshCw, Search } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { AppCopy, Service, ServiceStatus } from "@/types/app";
-
-function MetricCell({
-  label,
-  value,
-  icon: Icon,
-  accent,
-}: {
-  label: string;
-  value: number;
-  icon: typeof Server;
-  accent: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 px-2.5 py-2">
-      <div className="min-w-0">
-        <p className="truncate text-[10px] uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
-          {label}
-        </p>
-        <p className="mt-0.5 font-mono text-lg font-semibold">{value}</p>
-      </div>
-      <div className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", accent)}>
-        <Icon className="size-4" />
-      </div>
-    </div>
-  );
-}
+import { AppCopy, Service } from "@/types/app";
 
 type PortsViewProps = {
   copy: AppCopy;
   services: Service[];
+  total: number;
+  page: number;
+  pageSize: number;
+  loading: boolean;
+  error: string | null;
   search: string;
-  statusFilter: "all" | ServiceStatus;
+  onPageChange: (value: number) => void;
   onSearchChange: (value: string) => void;
-  onStatusFilterChange: (value: "all" | ServiceStatus) => void;
+  onRefresh: () => void;
 };
 
 export function PortsView({
   copy,
   services,
+  total,
+  page,
+  pageSize,
+  loading,
+  error,
   search,
-  statusFilter,
+  onPageChange,
   onSearchChange,
-  onStatusFilterChange,
+  onRefresh,
 }: PortsViewProps) {
-  const filteredServices = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return services.filter((service) => {
-      const matchesStatus = statusFilter === "all" || service.status === statusFilter;
-      const matchesKeyword =
-        !keyword ||
-        `${service.port} ${service.pid} ${service.name} ${service.location}`.toLowerCase().includes(keyword);
-      return matchesStatus && matchesKeyword;
-    });
-  }, [search, services, statusFilter]);
-
-  const activeCount = filteredServices.filter((item) => item.status === "active").length;
-  const warningCount = filteredServices.filter((item) => item.status === "warning").length;
-  const stoppedCount = filteredServices.filter((item) => item.status === "stopped").length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const canGoPrevious = page > 1;
+  const canGoNext = page < totalPages;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
-      <Card className="shrink-0 overflow-hidden">
-        <CardContent className="grid divide-y divide-[var(--border)] p-0 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
-          <MetricCell
-            label={copy.ports.showing}
-            value={filteredServices.length}
-            icon={Server}
-            accent="bg-[var(--secondary)] text-[var(--primary)]"
-          />
-          <MetricCell
-            label={copy.ports.active}
-            value={activeCount}
-            icon={ShieldCheck}
-            accent="bg-emerald-500/15 text-emerald-300"
-          />
-          <MetricCell
-            label={copy.ports.warning}
-            value={warningCount}
-            icon={AlertTriangle}
-            accent="bg-amber-500/15 text-amber-300"
-          />
-          <MetricCell
-            label={copy.ports.stopped}
-            value={stoppedCount}
-            icon={Gauge}
-            accent="bg-rose-500/15 text-rose-300"
-          />
-        </CardContent>
-      </Card>
-
       <Card className="shrink-0">
-        <CardContent className="grid grid-cols-[minmax(0,1fr)_124px_auto] items-center gap-2 p-2">
+        <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2">
           <div className="relative min-w-0">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              <Input
-                value={search}
-                onChange={(event) => onSearchChange(event.target.value)}
-                placeholder={copy.ports.searchPlaceholder}
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+            <Input
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={copy.ports.searchPlaceholder}
               className="h-8 w-full pl-9 text-xs"
-              />
+            />
           </div>
-            <Select value={statusFilter} onValueChange={(value) => onStatusFilterChange(value as "all" | ServiceStatus)}>
-            <SelectTrigger className="h-8 w-[124px] px-3 text-xs">
-                <SelectValue placeholder={copy.ports.statusFilter} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{copy.ports.allStatus}</SelectItem>
-                <SelectItem value="active">{copy.ports.active}</SelectItem>
-                <SelectItem value="warning">{copy.ports.warning}</SelectItem>
-                <SelectItem value="stopped">{copy.ports.stopped}</SelectItem>
-              </SelectContent>
-            </Select>
 
-          <Badge variant="secondary" className="shrink-0 px-2 py-0.5 tracking-[0.1em]">
-            {copy.ports.showing} {filteredServices.length} {copy.ports.items}
-          </Badge>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-8 shrink-0 gap-1.5 px-3"
+            disabled={loading}
+            onClick={onRefresh}
+          >
+            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+            {copy.ports.refresh}
+          </Button>
         </CardContent>
       </Card>
 
       <Card className="min-h-0 flex-1 overflow-hidden">
-        <CardContent className="min-h-0 p-0">
-          {filteredServices.length === 0 ? (
-            <div className="flex min-h-[320px] items-center justify-center px-6 text-sm text-[var(--muted-foreground)]">
+        <CardContent className="flex h-full min-h-0 flex-col p-0">
+          {loading ? (
+            <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-sm text-[var(--muted-foreground)]">
+              {copy.ports.loading}
+            </div>
+          ) : error ? (
+            <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-sm text-[var(--destructive)]">
+              {copy.ports.loadFailed}: {error}
+            </div>
+          ) : services.length === 0 ? (
+            <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-sm text-[var(--muted-foreground)]">
               {copy.ports.empty}
             </div>
           ) : (
-            <div className="h-full overflow-y-auto custom-scrollbar">
+            <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar">
               <Table className="table-fixed w-full">
                 <TableHeader className="sticky top-0 z-10 bg-[var(--card)] backdrop-blur">
                   <TableRow className="hover:bg-transparent">
@@ -148,22 +93,13 @@ export function PortsView({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredServices.map((service) => (
+                  {services.map((service) => (
                     <TableRow key={service.id} className="text-[13px]">
                       <TableCell className="font-mono text-[var(--primary)]">{service.port}</TableCell>
                       <TableCell className="font-mono text-[var(--muted-foreground)]">{service.pid}</TableCell>
                       <TableCell>
                         <div className="flex min-w-0 items-center gap-2">
-                          <div
-                            className={cn(
-                              "size-2.5 shrink-0 rounded-full",
-                              service.status === "active"
-                                ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
-                                : service.status === "warning"
-                                  ? "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.7)]"
-                                  : "bg-rose-400 shadow-[0_0_12px_rgba(251,113,133,0.7)]",
-                            )}
-                          />
+                          <div className="size-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
                           <div className="min-w-0">
                             <p className="truncate font-medium">{service.name}</p>
                             <p className="truncate text-[11px] text-[var(--muted-foreground)]">{service.location}</p>
@@ -193,6 +129,32 @@ export function PortsView({
               </Table>
             </div>
           )}
+
+          <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-t border-[var(--border)] bg-[var(--card)]/95 px-2.5 text-xs text-[var(--muted-foreground)] backdrop-blur">
+            <span className="min-w-0 truncate">
+              {copy.ports.total} {total} {copy.ports.items} · {copy.ports.page} {page} {copy.ports.of} {totalPages}
+            </span>
+            <div className="flex shrink-0 gap-1.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-7 px-2.5"
+                disabled={!canGoPrevious || loading}
+                onClick={() => onPageChange(page - 1)}
+              >
+                {copy.ports.previous}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-7 px-2.5"
+                disabled={!canGoNext || loading}
+                onClick={() => onPageChange(page + 1)}
+              >
+                {copy.ports.next}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

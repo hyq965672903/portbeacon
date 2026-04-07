@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, CircleDot, Cpu, Wifi } from "lucide-react";
+import { Activity, CircleDot, Cpu, Wifi } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,6 @@ type DashboardViewProps = {
 
 export function DashboardView({ copy, services }: DashboardViewProps) {
   const activeCount = services.filter((item) => item.status === "active").length;
-  const atRiskCount = services.filter((item) => item.status === "warning").length;
   const totalMemory = services.reduce((sum, service) => sum + Number.parseInt(service.memory, 10), 0);
 
   return (
@@ -66,13 +65,6 @@ export function DashboardView({ copy, services }: DashboardViewProps) {
           icon={Activity}
         />
         <MetricCard
-          label={copy.dashboard.riskyProcesses}
-          value={String(atRiskCount)}
-          hint={copy.dashboard.stats.riskyLabel}
-          accent="from-[rgba(245,158,11,0.18)]"
-          icon={AlertTriangle}
-        />
-        <MetricCard
           label={copy.dashboard.memoryUsage}
           value={`${totalMemory} MB`}
           hint={copy.dashboard.stats.memoryLabel}
@@ -89,9 +81,7 @@ export function DashboardView({ copy, services }: DashboardViewProps) {
                 <CardDescription>{copy.dashboard.topActive}</CardDescription>
                 <CardTitle>{copy.dashboard.quickActions}</CardTitle>
               </div>
-              <Badge variant={atRiskCount > 0 ? "warning" : "success"}>
-                {atRiskCount > 0 ? `${atRiskCount} ${copy.dashboard.pending}` : copy.dashboard.allStable}
-              </Badge>
+              <Badge variant="success">{copy.dashboard.allStable}</Badge>
             </div>
           </CardHeader>
           <CardContent className="grid gap-3 pt-0 md:grid-cols-2">
@@ -102,9 +92,7 @@ export function DashboardView({ copy, services }: DashboardViewProps) {
                     <p className="truncate font-medium">{service.name}</p>
                     <p className="truncate text-xs text-[var(--muted-foreground)]">localhost:{service.port}</p>
                   </div>
-                  <Badge variant={service.status === "active" ? "success" : service.status === "warning" ? "warning" : "destructive"}>
-                    {copy.status[service.status]}
-                  </Badge>
+                  <Badge variant="success">{copy.status.active}</Badge>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="min-w-0">

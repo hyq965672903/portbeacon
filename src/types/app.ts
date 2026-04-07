@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { messages } from "@/lib/i18n";
 
 export type View = "ports" | "history" | "settings" | "help";
-export type ServiceStatus = "active" | "warning" | "stopped";
+export type ServiceStatus = "active";
 export type HistoryAction = "stopped" | "started" | "ignored";
 
 export type Service = {

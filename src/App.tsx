@@ -6,10 +6,12 @@ import { HelpView } from "@/components/views/help-view";
 import { HistoryView } from "@/components/views/history-view";
 import { PortsView } from "@/components/views/ports-view";
 import { SettingsView } from "@/components/views/settings-view";
-import { historyEntries, navItems, services } from "@/data/mock";
+import { historyEntries } from "@/data/history-data";
+import { navItems } from "@/data/menu";
 import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
-import { View } from "@/types/app";
+import { listPorts } from "@/lib/ports";
+import { Service, View } from "@/types/app";
 
 function App() {
   const [view, setView] = useState<View>("ports");
@@ -21,12 +23,18 @@ function App() {
   const [rangeFilter, setRangeFilter] = useState("24h");
   const [historySearch, setHistorySearch] = useState("");
   const [portsSearch, setPortsSearch] = useState("");
-  const [serviceStatusFilter, setServiceStatusFilter] = useState<"all" | "active" | "warning" | "stopped">("all");
+  const [services, setServices] = useState<Service[]>([]);
+  const [portsPage, setPortsPage] = useState(1);
+  const [portsTotal, setPortsTotal] = useState(0);
+  const [portsLoading, setPortsLoading] = useState(false);
+  const [portsError, setPortsError] = useState<string | null>(null);
+  const [portsRefreshKey, setPortsRefreshKey] = useState(0);
   const [autoKill, setAutoKill] = useState(true);
   const [strictMode, setStrictMode] = useState(false);
 
   const copy = messages[locale];
   const layoutMode = useLayoutMode();
+  const portsPageSize = layoutMode === "compact" ? 8 : layoutMode === "wide" ? 16 : 12;
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("portbeacon-locale");
@@ -60,6 +68,45 @@ function App() {
 
     return () => media.removeEventListener("change", syncTheme);
   }, [themeMode]);
+
+  useEffect(() => {
+    setPortsPage(1);
+  }, [portsSearch, portsPageSize]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setPortsLoading(true);
+    const timer = window.setTimeout(() => {
+      listPorts({
+        page: portsPage,
+        pageSize: portsPageSize,
+        search: portsSearch,
+      })
+        .then((response) => {
+          if (cancelled) return;
+          setServices(response.items);
+          setPortsTotal(response.total);
+          setPortsError(null);
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          setServices([]);
+          setPortsTotal(0);
+          setPortsError(error instanceof Error ? error.message : String(error));
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setPortsLoading(false);
+          }
+        });
+    }, 120);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [portsPage, portsPageSize, portsRefreshKey, portsSearch]);
 
   const filteredHistory = useMemo(() => {
     return historyEntries.filter((entry) => {
@@ -100,10 +147,15 @@ function App() {
               <PortsView
                 copy={copy}
                 services={services}
+                total={portsTotal}
+                page={portsPage}
+                pageSize={portsPageSize}
+                loading={portsLoading}
+                error={portsError}
                 search={portsSearch}
-                statusFilter={serviceStatusFilter}
+                onPageChange={setPortsPage}
                 onSearchChange={setPortsSearch}
-                onStatusFilterChange={setServiceStatusFilter}
+                onRefresh={() => setPortsRefreshKey((value) => value + 1)}
               />
             )}
             {view === "history" && (
