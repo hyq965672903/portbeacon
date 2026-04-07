@@ -1,13 +1,15 @@
 use sysinfo::{ProcessesToUpdate, System};
 use tauri::{AppHandle, Emitter};
 
-use crate::history::{insert_history_event, query_history};
-use crate::models::{
+use crate::core::history::{insert_history_event, query_history};
+use crate::core::models::{
     HistoryEntry, HistoryListRequest, KillProcessRequest, PortListRequest, PortListResponse,
     PortService, ProcessSnapshot, ProcessTreeNode,
 };
-use crate::ports::process::{build_service, get_process_tree as build_process_tree, stop_process};
-use crate::ports::scanner::scan_port_snapshots;
+use crate::core::ports::process::{
+    build_service, get_process_tree as build_process_tree, stop_process,
+};
+use crate::core::ports::scanner::scan_port_snapshots;
 
 #[tauri::command]
 pub fn list_history(request: HistoryListRequest) -> Result<Vec<HistoryEntry>, String> {

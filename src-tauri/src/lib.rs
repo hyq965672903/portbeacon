@@ -1,13 +1,9 @@
 mod commands;
-mod history;
-mod models;
-mod monitor;
-mod ports;
-mod time;
+mod core;
 
 use commands::ports::{get_process_tree, kill_process, list_history, list_ports};
-use history::init_history_database;
-use monitor::start_port_monitor;
+use core::history::init_history_database;
+use core::monitor::start_port_monitor;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
