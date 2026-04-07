@@ -20,6 +20,7 @@ export type ProcessTreeNode = {
 export type Service = {
   id: string;
   port: number;
+  protocol: string;
   pid: number;
   name: string;
   status: ServiceStatus;

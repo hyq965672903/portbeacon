@@ -18,8 +18,10 @@ type PortsViewProps = {
   loading: boolean;
   error: string | null;
   search: string;
+  stoppingPid: number | null;
   onPageChange: (value: number) => void;
   onSearchChange: (value: string) => void;
+  onStopService: (service: Service) => void;
   onRefresh: () => void;
 };
 
@@ -113,8 +115,10 @@ type PortTableContentProps = {
   error: string | null;
   loading: boolean;
   onSelectService: (service: Service) => void;
+  onStopService: (service: Service) => void;
   selectedServiceId: string | undefined;
   services: Service[];
+  stoppingPid: number | null;
 };
 
 function PortTableContent({
@@ -122,8 +126,10 @@ function PortTableContent({
   error,
   loading,
   onSelectService,
+  onStopService,
   selectedServiceId,
   services,
+  stoppingPid,
 }: PortTableContentProps) {
   if (loading) {
     return (
@@ -203,9 +209,13 @@ function PortTableContent({
                   variant="destructive"
                   size="sm"
                   className="h-7 w-[64px] px-2"
-                  onClick={(event) => event.stopPropagation()}
+                  disabled={stoppingPid === service.pid || service.pid === 0}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onStopService(service);
+                  }}
                 >
-                  {copy.controls.stop}
+                  {stoppingPid === service.pid ? copy.ports.stopping : copy.controls.stop}
                 </Button>
               </TableCell>
             </TableRow>
@@ -225,8 +235,10 @@ export function PortsView({
   loading,
   error,
   search,
+  stoppingPid,
   onPageChange,
   onSearchChange,
+  onStopService,
   onRefresh,
 }: PortsViewProps) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -311,8 +323,10 @@ export function PortsView({
             error={error}
             loading={loading}
             onSelectService={setSelectedService}
+            onStopService={onStopService}
             selectedServiceId={selectedServiceId}
             services={services}
+            stoppingPid={stoppingPid}
           />
 
           <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-t border-[var(--border)] bg-[var(--card)]/95 px-2.5 text-xs text-[var(--muted-foreground)] backdrop-blur">
@@ -436,8 +450,13 @@ export function PortsView({
               <Button variant="secondary" className="h-9 flex-1" onClick={() => setSelectedService(null)}>
                 {copy.ports.closeDetails}
               </Button>
-              <Button variant="destructive" className="h-9 flex-1">
-                {copy.controls.stop}
+              <Button
+                variant="destructive"
+                className="h-9 flex-1"
+                disabled={stoppingPid === selectedService.pid || selectedService.pid === 0}
+                onClick={() => onStopService(selectedService)}
+              >
+                {stoppingPid === selectedService.pid ? copy.ports.stopping : copy.controls.stop}
               </Button>
             </div>
           </aside>

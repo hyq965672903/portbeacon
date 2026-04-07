@@ -1,8 +1,13 @@
 mod commands;
+mod history;
+mod models;
+mod monitor;
+mod ports;
+mod time;
 
-use commands::ports::{
-    get_process_tree, init_history_database, list_history, list_ports, start_port_monitor,
-};
+use commands::ports::{get_process_tree, kill_process, list_history, list_ports};
+use history::init_history_database;
+use monitor::start_port_monitor;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,6 +23,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             list_ports,
             get_process_tree,
+            kill_process,
             list_history
         ])
         .run(tauri::generate_context!())

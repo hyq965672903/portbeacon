@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { WorkspaceHeader } from "@/components/layout/workspace-header";
+import { Button } from "@/components/ui/button";
 import { HelpView } from "@/components/views/help-view";
 import { HistoryView } from "@/components/views/history-view";
 import { PortsView } from "@/components/views/ports-view";
@@ -11,8 +12,8 @@ import { navItems } from "@/data/menu";
 import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { listHistory } from "@/lib/history";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
-import { listPorts } from "@/lib/ports";
-import { HistoryAction, HistoryEntry, Service, View } from "@/types/app";
+import { killProcess, listPorts } from "@/lib/ports";
+import type { HistoryAction, HistoryEntry, Service, View } from "@/types/app";
 
 function App() {
   const [view, setView] = useState<View>("ports");
@@ -34,6 +35,9 @@ function App() {
   const [portsLoading, setPortsLoading] = useState(false);
   const [portsError, setPortsError] = useState<string | null>(null);
   const [portsRefreshKey, setPortsRefreshKey] = useState(0);
+  const [pendingStopService, setPendingStopService] = useState<Service | null>(null);
+  const [stopError, setStopError] = useState<string | null>(null);
+  const [stoppingPid, setStoppingPid] = useState<number | null>(null);
   const [autoKill, setAutoKill] = useState(true);
   const [strictMode, setStrictMode] = useState(false);
 
@@ -155,6 +159,40 @@ function App() {
     };
   }, []);
 
+  async function handleStopService(service: Service) {
+    if (stoppingPid !== null || service.pid === 0) {
+      return;
+    }
+
+    setStopError(null);
+    setPendingStopService(service);
+  }
+
+  async function confirmStopService() {
+    if (!pendingStopService || stoppingPid !== null || pendingStopService.pid === 0) {
+      return;
+    }
+
+    setStopError(null);
+    setStoppingPid(pendingStopService.pid);
+
+    try {
+      await killProcess({
+        pid: pendingStopService.pid,
+        port: pendingStopService.port,
+        protocol: pendingStopService.protocol,
+      });
+      setPendingStopService(null);
+      setPortsRefreshKey((value) => value + 1);
+      setHistoryRefreshKey((value) => value + 1);
+    } catch (error) {
+      setStopError(error instanceof Error ? error.message : String(error));
+      setHistoryRefreshKey((value) => value + 1);
+    } finally {
+      setStoppingPid(null);
+    }
+  }
+
   return (
     <div className="portbeacon-app h-screen overflow-hidden bg-transparent text-[var(--foreground)]" data-layout-mode={layoutMode}>
       <div className="portbeacon-shell mx-auto grid h-full overflow-hidden">
@@ -187,8 +225,10 @@ function App() {
                 loading={portsLoading}
                 error={portsError}
                 search={portsSearch}
+                stoppingPid={stoppingPid}
                 onPageChange={setPortsPage}
                 onSearchChange={setPortsSearch}
+                onStopService={handleStopService}
                 onRefresh={() => setPortsRefreshKey((value) => value + 1)}
               />
             )}
@@ -222,6 +262,78 @@ function App() {
           </div>
         </main>
       </div>
+
+      {pendingStopService && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={copy.ports.stopTitle}
+            className="w-[min(420px,calc(100vw-32px))] rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4 shadow-[0_28px_100px_rgba(0,0,0,0.45)]"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--destructive)]">
+                  {copy.controls.stop}
+                </p>
+                <h2 className="mt-1 text-lg font-semibold">{copy.ports.stopTitle}</h2>
+              </div>
+              <div className="rounded-lg bg-[var(--destructive)]/12 px-2.5 py-1 font-mono text-sm text-[var(--destructive)]">
+                :{pendingStopService.port}
+              </div>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-[var(--muted-foreground)]">
+              {copy.ports.stopDescription}
+            </p>
+
+            <div className="mt-4 space-y-2 rounded-lg border border-[var(--border)] bg-[var(--card)]/72 p-3 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[var(--muted-foreground)]">{copy.table.service}</span>
+                <span className="min-w-0 truncate font-semibold">{pendingStopService.name}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[var(--muted-foreground)]">{copy.table.pid}</span>
+                <span className="font-mono">{pendingStopService.pid}</span>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-[var(--muted-foreground)]">{copy.table.path}</span>
+                <span className="min-w-0 break-all text-right font-mono text-[var(--muted-foreground)]">
+                  {pendingStopService.location}
+                </span>
+              </div>
+            </div>
+
+            {stopError && (
+              <div className="mt-3 rounded-lg border border-[var(--destructive)]/25 bg-[var(--destructive)]/10 p-3 text-xs leading-5 text-[var(--destructive)]">
+                {copy.ports.stopFailed}: {stopError}
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                className="h-9 px-4"
+                disabled={stoppingPid === pendingStopService.pid}
+                onClick={() => {
+                  setPendingStopService(null);
+                  setStopError(null);
+                }}
+              >
+                {copy.ports.cancelStop}
+              </Button>
+              <Button
+                variant="destructive"
+                className="h-9 px-4"
+                disabled={stoppingPid === pendingStopService.pid}
+                onClick={confirmStopService}
+              >
+                {stoppingPid === pendingStopService.pid ? copy.ports.stopping : copy.ports.confirmStop}
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

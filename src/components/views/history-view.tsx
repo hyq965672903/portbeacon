@@ -40,6 +40,7 @@ function actionAccent(action: HistoryAction) {
   if (action === "detected") return "bg-emerald-400";
   if (action === "released") return "bg-sky-300";
   if (action === "replaced") return "bg-amber-300";
+  if (action === "stopped") return "bg-red-400";
   if (action === "failed") return "bg-rose-400";
   return "bg-[var(--muted-foreground)]";
 }
@@ -277,6 +278,8 @@ export function HistoryView({
               <SelectItem value="detected">{copy.history.actions.detected}</SelectItem>
               <SelectItem value="released">{copy.history.actions.released}</SelectItem>
               <SelectItem value="replaced">{copy.history.actions.replaced}</SelectItem>
+              <SelectItem value="stopped">{copy.history.actions.stopped}</SelectItem>
+              <SelectItem value="ignored">{copy.history.actions.ignored}</SelectItem>
               <SelectItem value="failed">{copy.history.actions.failed}</SelectItem>
             </SelectContent>
           </Select>

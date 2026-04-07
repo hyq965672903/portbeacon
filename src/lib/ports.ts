@@ -15,10 +15,20 @@ export type PortListRequest = {
   search: string;
 };
 
+export type KillProcessRequest = {
+  pid: number;
+  port: number;
+  protocol?: string;
+};
+
 export function listPorts(request: PortListRequest) {
   return invoke<PortListResponse>("list_ports", { request });
 }
 
 export function getProcessTree(pid: number) {
   return invoke<ProcessTreeNode | null>("get_process_tree", { pid });
+}
+
+export function killProcess(request: KillProcessRequest) {
+  return invoke<void>("kill_process", { request });
 }
