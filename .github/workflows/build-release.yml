@@ -20,7 +20,7 @@ jobs:
           - name: macOS Apple Silicon
             os: macos-14
             rust-target: aarch64-apple-darwin
-            args: --target aarch64-apple-darwin --bundles dmg
+            args: --target aarch64-apple-darwin --bundles app,dmg
           - name: macOS Intel
             os: macos-15-intel
             rust-target: x86_64-apple-darwin

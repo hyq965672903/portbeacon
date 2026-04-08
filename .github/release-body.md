@@ -1,26 +1,9 @@
 ## 更新日志
 
-- 新增设置页「应用更新」模块：
-  - 支持手动检查新版本。
-  - 发现更新后展示版本号、发布日期和更新说明。
-  - 支持用户确认后下载并安装更新。
-  - 安装完成后提示重启应用。
-- 接入 Tauri updater：
-  - 新增 `@tauri-apps/plugin-updater` 和 `tauri-plugin-updater`。
-  - 新增 updater capability 配置。
-  - 配置 GitHub Release `latest.json` 作为更新源。
-  - 开启 `createUpdaterArtifacts`，为自动更新生成签名产物。
-- 调整 GitHub Release 打包流程：
-  - 使用 `tauri-apps/tauri-action` 构建和发布多平台安装包。
-  - 支持上传 updater `.sig` 签名文件。
-  - 支持生成并上传 `latest.json`。
-  - Release 说明继续读取 `.github/release-body.md`，并合并 GitHub 自动变更记录。
-- 优化端口列表展示：
-  - 默认尽量避免横向滚动。
-  - 压缩表格列宽和按钮尺寸，在窗口较窄时尽量保留端口、服务、来源、运行时长、资源和操作信息。
-  - 资源占用改为单行展示，长内容通过截断和提示保留可读性。
-- 新增发布和自动更新方案文档，记录旧 CI/CD 流程与当前 `tauri-action` 流程的差异、配置步骤和常见问题。
-- 调整版本号到 `0.3.0`。
+- 修复 macOS Apple Silicon 检查更新时找不到平台项的问题：
+  - `latest.json` 需要包含 `darwin-aarch64-app` / `darwin-aarch64`。
+  - Apple Silicon 构建现在同时生成 `app` 和 `dmg`，避免只发布 `.dmg` 时缺少 updater 需要的平台记录。
+- 调整版本号到 `0.3.1`。
 
 ## 下载说明
 
