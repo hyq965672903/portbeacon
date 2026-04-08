@@ -1,50 +1,31 @@
 ## 更新日志
 
-- 新增「开发端口 / 全部端口」视图，默认聚焦开发相关端口，系统服务、生活软件、浏览器后台和工具后台会默认折叠到全部端口中。
-- 新增端口来源归因能力，可识别 IDE、AI Agent、AI IDE、Terminal、Docker / OrbStack 等来源，并区分直接来源和上游来源。
-- 新增归因分析详情，端口详情中可查看归因摘要、进程链、置信度和判断依据。
-- 新增服务指纹识别：
-  - Docker / OrbStack 常见数据库端口可识别 MySQL、PostgreSQL、Redis、MongoDB 等服务。
-  - AI Agent 来源端口支持短超时 localhost HTTP 指纹探测，不写死具体现场端口。
-- 新增同一 PID 多端口收敛逻辑，减少 IDEA / Java 等场景下把业务端口和内部辅助端口同时展示为开发端口的问题。
-- 新增端口关注能力，可在列表中标记端口，并使用「只看关注」筛选。
-- 优化端口列表交互：
-  - 去掉分页，改为滚动列表。
-  - 列表单行展示端口、服务、来源、运行时长、资源和操作。
-  - PID、完整路径、命令、进程链等详细信息移动到详情抽屉。
-- 新增事件驱动自动刷新：
-  - 后端端口变化时发送 `ports-updated`。
-  - 前端静默刷新端口列表。
-  - 详情打开时不会因为刷新被强制关闭。
-  - 端口消失后保留最后快照并提示状态。
-- 新增暂停 / 恢复自动刷新按钮。
-- 新增端口采集间隔设置：2 秒、5 秒、10 秒。
-- 新增主动服务指纹开关，可在系统设置中关闭主动探测。
-- 新增归因修正规则管理：
-  - 运行时规则文件：`portbeacon-rules.json`
-  - 开发默认模板：`src-tauri/src/modules/analysis/portbeacon-rules.default.json`
-  - 设置页支持新增、启用 / 禁用、删除端口修正规则。
-- 新增历史记录视图和历史查询接口，支持查看 detected / released / replaced / stopped 等端口事件。
-- 优化手动停止进程流程，停止后会同时刷新端口列表和历史记录。
-- 优化后端归因缓存，避免同一 `protocol:port:pid` 在自动刷新中反复重算；用户规则变更后会清空缓存并触发刷新。
-- 调整 Rust 后端目录结构：
-  - `commands/`
-  - `modules/analysis/`
-  - `modules/port/`
-  - `modules/history/`
-  - `utils/`
-- 调整端口、历史、归因相关模型命名，继续使用 QO / VO / PO 约定，并补充中文注释。
-- 新增和完善文档：
-  - 中文 README
-  - 英文 README
-  - CI/CD 规范文档
-  - 归因分析设计文档
-- 调整版本号到 `0.2.0`。
+- 新增设置页「应用更新」模块：
+  - 支持手动检查新版本。
+  - 发现更新后展示版本号、发布日期和更新说明。
+  - 支持用户确认后下载并安装更新。
+  - 安装完成后提示重启应用。
+- 接入 Tauri updater：
+  - 新增 `@tauri-apps/plugin-updater` 和 `tauri-plugin-updater`。
+  - 新增 updater capability 配置。
+  - 配置 GitHub Release `latest.json` 作为更新源。
+  - 开启 `createUpdaterArtifacts`，为自动更新生成签名产物。
+- 调整 GitHub Release 打包流程：
+  - 使用 `tauri-apps/tauri-action` 构建和发布多平台安装包。
+  - 支持上传 updater `.sig` 签名文件。
+  - 支持生成并上传 `latest.json`。
+  - Release 说明继续读取 `.github/release-body.md`，并合并 GitHub 自动变更记录。
+- 优化端口列表展示：
+  - 默认尽量避免横向滚动。
+  - 压缩表格列宽和按钮尺寸，在窗口较窄时尽量保留端口、服务、来源、运行时长、资源和操作信息。
+  - 资源占用改为单行展示，长内容通过截断和提示保留可读性。
+- 新增发布和自动更新方案文档，记录旧 CI/CD 流程与当前 `tauri-action` 流程的差异、配置步骤和常见问题。
+- 调整版本号到 `0.3.0`。
 
 ## 下载说明
 
 - macOS M 芯片：下载 `aarch64` 或 `universal` 的 `.dmg`。
-- macOS Intel 芯片：下载 `x64` 的 `.app.zip`。
+- macOS Intel 芯片：优先下载 `x64` / `x86_64` 对应的 macOS 安装包。
 - Windows：下载 `.msi` 或 `.exe`。
 - Linux：下载 `.AppImage`、`.deb` 或 `.rpm`。
 
@@ -58,3 +39,4 @@
 
 - 停止进程是高风险操作。PortBeacon 会做基础保护，但仍建议先在详情中确认 PID、路径和进程链，再执行停止。
 - 主动服务指纹只访问本机 localhost，并使用短超时；如不需要，可在系统设置中关闭。
+- 应用内检查更新依赖 GitHub Release 中的 `latest.json` 和 `.sig`。如果发布流程尚未完成，设置页可能提示更新通道未准备好。
