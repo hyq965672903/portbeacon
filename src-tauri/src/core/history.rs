@@ -5,12 +5,13 @@ use std::sync::OnceLock;
 use rusqlite::{params, Connection};
 use tauri::{AppHandle, Manager};
 
-use crate::core::models::{HistoryEntry, HistoryListRequest};
+use crate::core::models::{HistoryEventPO, HistoryEventVO, HistoryListQO};
 use crate::core::time::timestamp_ms;
 
 const HISTORY_LIMIT: usize = 600;
 static HISTORY_DB_PATH: OnceLock<PathBuf> = OnceLock::new();
 
+/// 在 Tauri 应用数据目录中初始化 SQLite 历史库。
 pub fn init_history_database(app: AppHandle) -> Result<(), String> {
     let data_dir = app
         .path()
@@ -27,7 +28,8 @@ pub fn init_history_database(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-pub fn insert_history_event(event: &HistoryEntry) -> Result<(), String> {
+/// 持久化一条历史事件，并在写入后裁剪旧记录。
+pub fn insert_history_event(event: &HistoryEventPO) -> Result<(), String> {
     let connection = history_connection()?;
     connection
         .execute(
@@ -66,7 +68,8 @@ pub fn insert_history_event(event: &HistoryEntry) -> Result<(), String> {
     prune_history_events(&connection)
 }
 
-pub fn query_history(request: HistoryListRequest) -> Result<Vec<HistoryEntry>, String> {
+/// 根据前端过滤条件查询历史记录，并返回 VO 结构数据。
+pub fn query_history(request: HistoryListQO) -> Result<Vec<HistoryEventVO>, String> {
     let connection = history_connection()?;
     let limit = request.limit.unwrap_or(200).clamp(1, HISTORY_LIMIT) as i64;
     let now = timestamp_ms();
@@ -101,7 +104,7 @@ pub fn query_history(request: HistoryListRequest) -> Result<Vec<HistoryEntry>, S
         .query_map(
             params![min_timestamp, action, request.port, search, limit],
             |row| {
-                Ok(HistoryEntry {
+                Ok(HistoryEventPO {
                     id: row.get(0)?,
                     timestamp: row.get(1)?,
                     port: row.get(2)?,
@@ -119,10 +122,14 @@ pub fn query_history(request: HistoryListRequest) -> Result<Vec<HistoryEntry>, S
         )
         .map_err(|error| format!("failed to query history events: {error}"))?;
 
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|error| format!("failed to read history events: {error}"))
+    let events = rows
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("failed to read history events: {error}"))?;
+
+    Ok(events.into_iter().map(HistoryEventVO::from).collect())
 }
 
+/// 打开已初始化历史库的新 SQLite 连接。
 fn history_connection() -> Result<Connection, String> {
     let db_path = HISTORY_DB_PATH
         .get()
@@ -130,6 +137,7 @@ fn history_connection() -> Result<Connection, String> {
     Connection::open(db_path).map_err(|error| format!("failed to open history database: {error}"))
 }
 
+/// 创建历史表结构和索引。
 fn migrate_history_database(connection: &Connection) -> Result<(), String> {
     connection
         .execute_batch(
@@ -160,6 +168,7 @@ fn migrate_history_database(connection: &Connection) -> Result<(), String> {
         .map_err(|error| format!("failed to migrate history database: {error}"))
 }
 
+/// 仅保留指定上限内的最新历史记录。
 fn prune_history_events(connection: &Connection) -> Result<(), String> {
     connection
         .execute(

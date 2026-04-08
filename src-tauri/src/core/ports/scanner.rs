@@ -6,6 +6,7 @@ use sysinfo::{Pid, ProcessesToUpdate, System};
 use crate::core::models::PortSnapshot;
 use crate::core::ports::process::process_name;
 
+/// 扫描监听中的 TCP/UDP socket，并映射到所属进程快照。
 pub fn scan_port_snapshots() -> Result<HashMap<String, PortSnapshot>, String> {
     let mut system = System::new_all();
     system.refresh_processes(ProcessesToUpdate::All, true);

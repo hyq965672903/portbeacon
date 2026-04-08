@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { AppCopy, Service } from "@/types/app";
+import { AppCopy, PortServiceVO } from "@/types/app";
 
 function MetricCard({
   label,
@@ -40,7 +40,7 @@ function MetricCard({
 
 type DashboardViewProps = {
   copy: AppCopy;
-  services: Service[];
+  services: PortServiceVO[];
 };
 
 export function DashboardView({ copy, services }: DashboardViewProps) {

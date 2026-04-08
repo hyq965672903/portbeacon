@@ -3,10 +3,11 @@ use std::time::Duration;
 
 use sysinfo::{Pid, ProcessesToUpdate, System};
 
-use crate::core::models::{KillProcessRequest, PortService, ProcessSnapshot, ProcessTreeNode};
+use crate::core::models::{KillProcessQO, PortServiceVO, ProcessSnapshot, ProcessTreeNodeVO};
 use crate::core::ports::attribution::{infer_port_context, ProcessEvidence};
 
-pub fn get_process_tree(pid: u32) -> Option<ProcessTreeNode> {
+/// 为监听进程构建从父到子的进程树。
+pub fn get_process_tree(pid: u32) -> Option<ProcessTreeNodeVO> {
     if pid == 0 {
         return None;
     }
@@ -17,7 +18,8 @@ pub fn get_process_tree(pid: u32) -> Option<ProcessTreeNode> {
     build_process_tree(&system, pid)
 }
 
-pub fn stop_process(request: &KillProcessRequest) -> Result<ProcessSnapshot, String> {
+/// 在执行本地安全检查后停止进程。
+pub fn stop_process(request: &KillProcessQO) -> Result<ProcessSnapshot, String> {
     if request.pid == 0 {
         return Err("pid 0 cannot be stopped".to_string());
     }
@@ -54,13 +56,14 @@ pub fn stop_process(request: &KillProcessRequest) -> Result<ProcessSnapshot, Str
     Ok(snapshot)
 }
 
+/// 为单个扫描端口构建前端 VO，并附加归因元数据。
 pub fn build_service(
     system: &System,
     id: String,
     port: u16,
     protocol: String,
     pid: u32,
-) -> PortService {
+) -> PortServiceVO {
     let process = if pid == 0 {
         None
     } else {
@@ -89,7 +92,7 @@ pub fn build_service(
     let evidence = chain.iter().map(ProcessEvidence::from).collect::<Vec<_>>();
     let (attribution, classification) = infer_port_context(port, &name, &location, &evidence);
 
-    PortService {
+    PortServiceVO {
         id,
         port,
         protocol,
@@ -106,11 +109,12 @@ pub fn build_service(
     }
 }
 
-fn build_process_tree(system: &System, pid: u32) -> Option<ProcessTreeNode> {
+/// 将线性父进程链转换为嵌套进程树 VO。
+fn build_process_tree(system: &System, pid: u32) -> Option<ProcessTreeNodeVO> {
     let chain = collect_process_chain(system, pid);
 
     chain.into_iter().fold(None, |child, item| {
-        let mut parent = ProcessTreeNode::new(
+        let mut parent = ProcessTreeNodeVO::new(
             item.pid,
             item.parent_pid,
             item.name,
@@ -127,6 +131,7 @@ fn build_process_tree(system: &System, pid: u32) -> Option<ProcessTreeNode> {
     })
 }
 
+/// 收集从根祖先进程到目标进程的进程链。
 pub fn collect_process_chain(system: &System, pid: u32) -> Vec<ProcessChainItem> {
     let mut current_pid = Pid::from_u32(pid);
     let mut seen = HashSet::new();
@@ -162,13 +167,20 @@ pub fn collect_process_chain(system: &System, pid: u32) -> Vec<ProcessChainItem>
     chain
 }
 
+/// 收集进程链证据时使用的内部结构。
 #[derive(Clone, Debug)]
 pub struct ProcessChainItem {
+    /// 进程 PID。
     pub pid: u32,
+    /// 父进程 PID。
     pub parent_pid: Option<u32>,
+    /// 进程名称。
     pub name: String,
+    /// 进程命令行。
     pub command: Option<String>,
+    /// 进程可执行文件路径。
     pub executable: Option<String>,
+    /// 进程工作目录。
     pub cwd: Option<String>,
 }
 
@@ -183,6 +195,7 @@ impl From<&ProcessChainItem> for ProcessEvidence {
     }
 }
 
+/// 返回适合 UI 展示的短进程名。
 pub fn process_name(process: &sysinfo::Process) -> String {
     let name = process
         .name()
@@ -201,6 +214,7 @@ pub fn process_name(process: &sysinfo::Process) -> String {
     }
 }
 
+/// 格式化进程命令行，用于展示和归因匹配。
 fn process_command(process: &sysinfo::Process) -> Option<String> {
     let command = process
         .cmd()
@@ -220,6 +234,7 @@ fn process_command(process: &sysinfo::Process) -> Option<String> {
     }
 }
 
+/// 格式化进程运行时长，用于紧凑表格单元格。
 fn format_duration(seconds: u64) -> String {
     let duration = Duration::from_secs(seconds);
     let hours = duration.as_secs() / 3600;
@@ -232,6 +247,7 @@ fn format_duration(seconds: u64) -> String {
     }
 }
 
+/// 格式化内存字节数，用于紧凑表格单元格。
 fn format_memory(bytes: u64) -> String {
     let mb = bytes as f64 / 1024.0 / 1024.0;
 

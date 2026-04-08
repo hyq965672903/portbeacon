@@ -13,7 +13,7 @@ import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { listHistory } from "@/lib/history";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
 import { killProcess, listPorts } from "@/lib/ports";
-import type { HistoryAction, HistoryEntry, PortScope, Service, View } from "@/types/app";
+import type { HistoryAction, HistoryEventVO, PortScope, PortServiceVO, View } from "@/types/app";
 
 function App() {
   const [view, setView] = useState<View>("ports");
@@ -24,7 +24,7 @@ function App() {
   const [portFilter, setPortFilter] = useState("all");
   const [rangeFilter, setRangeFilter] = useState("24h");
   const [historySearch, setHistorySearch] = useState("");
-  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [historyEntries, setHistoryEntries] = useState<HistoryEventVO[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -32,13 +32,13 @@ function App() {
   const [portScope, setPortScope] = useState<PortScope>("development");
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [pinnedPorts, setPinnedPorts] = useState<number[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<PortServiceVO[]>([]);
   const [portsPage, setPortsPage] = useState(1);
   const [portsTotal, setPortsTotal] = useState(0);
   const [portsLoading, setPortsLoading] = useState(false);
   const [portsError, setPortsError] = useState<string | null>(null);
   const [portsRefreshKey, setPortsRefreshKey] = useState(0);
-  const [pendingStopService, setPendingStopService] = useState<Service | null>(null);
+  const [pendingStopService, setPendingStopService] = useState<PortServiceVO | null>(null);
   const [stopError, setStopError] = useState<string | null>(null);
   const [stoppingPid, setStoppingPid] = useState<number | null>(null);
   const [autoKill, setAutoKill] = useState(true);
@@ -181,7 +181,7 @@ function App() {
     };
   }, []);
 
-  async function handleStopService(service: Service) {
+  async function handleStopService(service: PortServiceVO) {
     if (stoppingPid !== null || service.pid === 0) {
       return;
     }

@@ -8,12 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { Locale } from "@/lib/i18n";
 import { getProcessTree } from "@/lib/ports";
 import { cn } from "@/lib/utils";
-import type { AppCopy, PortScope, ProcessTreeNode, Service } from "@/types/app";
+import type { AppCopy, PortScope, ProcessTreeNodeVO, PortServiceVO } from "@/types/app";
 
 type PortsViewProps = {
   copy: AppCopy;
   locale: Locale;
-  services: Service[];
+  services: PortServiceVO[];
   total: number;
   page: number;
   pageSize: number;
@@ -29,7 +29,7 @@ type PortsViewProps = {
   onScopeChange: (value: PortScope) => void;
   onPinnedOnlyChange: (value: boolean) => void;
   onPinnedPortToggle: (port: number) => void;
-  onStopService: (service: Service) => void;
+  onStopService: (service: PortServiceVO) => void;
   onRefresh: () => void;
 };
 
@@ -39,7 +39,7 @@ function scopeLabel(copy: AppCopy, scope: PortScope) {
   return scope === "development" ? copy.ports.developmentPorts : copy.ports.allPorts;
 }
 
-function compactSource(copy: AppCopy, service: Service) {
+function compactSource(copy: AppCopy, service: PortServiceVO) {
   const parts = [
     service.attribution.sourceApp,
     service.attribution.launcher,
@@ -49,7 +49,7 @@ function compactSource(copy: AppCopy, service: Service) {
   return parts.length > 0 ? parts.join(" · ") : copy.ports.sourceUnknown;
 }
 
-function ProcessTree({ node, depth = 0 }: { node: ProcessTreeNode; depth?: number }) {
+function ProcessTree({ node, depth = 0 }: { node: ProcessTreeNodeVO; depth?: number }) {
   return (
     <div className="relative">
       <div
@@ -103,7 +103,7 @@ type RenderProcessTreeStateInput = {
   copy: AppCopy;
   error: string | null;
   loading: boolean;
-  tree: ProcessTreeNode | null;
+  tree: ProcessTreeNodeVO | null;
 };
 
 function renderProcessTreeState({ copy, error, loading, tree }: RenderProcessTreeStateInput) {
@@ -138,10 +138,10 @@ type PortTableContentProps = {
   copy: AppCopy;
   error: string | null;
   loading: boolean;
-  onSelectService: (service: Service) => void;
-  onStopService: (service: Service) => void;
+  onSelectService: (service: PortServiceVO) => void;
+  onStopService: (service: PortServiceVO) => void;
   selectedServiceId: string | undefined;
-  services: Service[];
+  services: PortServiceVO[];
   pinnedPorts: number[];
   stoppingPid: number | null;
   onPinnedPortToggle: (port: number) => void;
@@ -296,8 +296,8 @@ export function PortsView({
   onStopService,
   onRefresh,
 }: PortsViewProps) {
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [processTree, setProcessTree] = useState<ProcessTreeNode | null>(null);
+  const [selectedService, setSelectedService] = useState<PortServiceVO | null>(null);
+  const [processTree, setProcessTree] = useState<ProcessTreeNodeVO | null>(null);
   const [processTreeLoading, setProcessTreeLoading] = useState(false);
   const [processTreeError, setProcessTreeError] = useState<string | null>(null);
   const selectedServiceId = selectedService?.id;

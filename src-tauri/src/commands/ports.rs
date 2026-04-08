@@ -3,24 +3,26 @@ use tauri::{AppHandle, Emitter};
 
 use crate::core::history::{insert_history_event, query_history};
 use crate::core::models::{
-    HistoryEntry, HistoryListRequest, KillProcessRequest, PortListRequest, PortListResponse,
-    PortService, ProcessSnapshot, ProcessTreeNode,
+    HistoryEventPO, HistoryEventVO, HistoryListQO, KillProcessQO, PortListQO, PortListVO,
+    PortServiceVO, ProcessSnapshot, ProcessTreeNodeVO,
 };
 use crate::core::ports::process::{
     build_service, get_process_tree as build_process_tree, stop_process,
 };
 use crate::core::ports::scanner::scan_port_snapshots;
 
+/// 查询历史记录并返回给前端展示。
 #[tauri::command]
-pub fn list_history(request: HistoryListRequest) -> Result<Vec<HistoryEntry>, String> {
+pub fn list_history(request: HistoryListQO) -> Result<Vec<HistoryEventVO>, String> {
     query_history(request)
 }
 
+/// 手动停止目标进程，并写入历史记录。
 #[tauri::command]
-pub fn kill_process(app: AppHandle, request: KillProcessRequest) -> Result<(), String> {
+pub fn kill_process(app: AppHandle, request: KillProcessQO) -> Result<(), String> {
     let event = match stop_process(&request) {
-        Ok(snapshot) => HistoryEntry::manual_stop(&request, &snapshot, "success", None),
-        Err(error) => HistoryEntry::manual_stop(
+        Ok(snapshot) => HistoryEventPO::manual_stop(&request, &snapshot, "success", None),
+        Err(error) => HistoryEventPO::manual_stop(
             &request,
             &ProcessSnapshot::fallback(request.pid),
             "failed",
@@ -43,14 +45,16 @@ pub fn kill_process(app: AppHandle, request: KillProcessRequest) -> Result<(), S
     result
 }
 
+/// 查询目标 PID 的进程链详情。
 #[tauri::command]
-pub fn get_process_tree(pid: u32) -> Result<Option<ProcessTreeNode>, String> {
+pub fn get_process_tree(pid: u32) -> Result<Option<ProcessTreeNodeVO>, String> {
     Ok(build_process_tree(pid))
 }
 
+/// 查询端口列表，并按搜索、范围和关注端口进行过滤分页。
 #[tauri::command]
-pub fn list_ports(request: PortListRequest) -> Result<PortListResponse, String> {
-    let request = NormalizedPortListRequest::from(request);
+pub fn list_ports(request: PortListQO) -> Result<PortListVO, String> {
+    let request = NormalizedPortListQO::from(request);
     let snapshots = scan_port_snapshots()?;
     let mut system = System::new_all();
     system.refresh_processes(ProcessesToUpdate::All, true);
@@ -83,7 +87,7 @@ pub fn list_ports(request: PortListRequest) -> Result<PortListResponse, String> 
         .take(request.page_size)
         .collect();
 
-    Ok(PortListResponse {
+    Ok(PortListVO {
         items,
         total,
         page: request.page,
@@ -91,17 +95,24 @@ pub fn list_ports(request: PortListRequest) -> Result<PortListResponse, String> 
     })
 }
 
-struct NormalizedPortListRequest {
+/// 后端内部使用的标准化端口列表查询对象。
+struct NormalizedPortListQO {
+    /// 当前页码。
     page: usize,
+    /// 每页记录数。
     page_size: usize,
+    /// 标准化后的搜索关键词。
     search: String,
+    /// 标准化后的列表范围。
     scope: String,
+    /// 是否只展示关注端口。
     pinned_only: bool,
+    /// 关注端口列表。
     pinned_ports: Vec<u16>,
 }
 
-impl From<PortListRequest> for NormalizedPortListRequest {
-    fn from(request: PortListRequest) -> Self {
+impl From<PortListQO> for NormalizedPortListQO {
+    fn from(request: PortListQO) -> Self {
         Self {
             page: request.page.max(1),
             page_size: request.page_size.clamp(1, 100),
@@ -113,12 +124,12 @@ impl From<PortListRequest> for NormalizedPortListRequest {
     }
 }
 
-impl NormalizedPortListRequest {
-    fn matches_search(&self, service: &PortService) -> bool {
+impl NormalizedPortListQO {
+    fn matches_search(&self, service: &PortServiceVO) -> bool {
         self.search.is_empty() || self.searchable_text(service).contains(&self.search)
     }
 
-    fn matches_scope(&self, service: &PortService) -> bool {
+    fn matches_scope(&self, service: &PortServiceVO) -> bool {
         if self.pinned_only && !self.pinned_ports.contains(&service.port) {
             return false;
         }
@@ -130,7 +141,7 @@ impl NormalizedPortListRequest {
         service.classification.visibility == "focused"
     }
 
-    fn searchable_text(&self, service: &PortService) -> String {
+    fn searchable_text(&self, service: &PortServiceVO) -> String {
         format!(
             "{} {} {} {} {} {} {} {} {} {}",
             service.port,
@@ -158,7 +169,7 @@ mod tests {
 
     #[test]
     fn normalizes_pagination_inputs() {
-        let request = NormalizedPortListRequest::from(PortListRequest {
+        let request = NormalizedPortListQO::from(PortListQO {
             page: 0,
             page_size: 500,
             search: Some("  Node  ".to_string()),

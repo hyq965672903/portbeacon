@@ -1,15 +1,21 @@
 use std::path::Path;
 
-use crate::core::models::{PortAttribution, PortClassification};
+use crate::core::models::{PortAttributionVO, PortClassificationVO};
 
+/// 归因引擎使用的进程证据。
 #[derive(Clone, Debug)]
 pub struct ProcessEvidence {
+    /// 进程名称。
     pub name: String,
+    /// 进程命令行。
     pub command: Option<String>,
+    /// 进程可执行文件路径。
     pub executable: Option<String>,
+    /// 进程工作目录。
     pub cwd: Option<String>,
 }
 
+/// 从进程链中识别出的来源大类。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum SourceKind {
     AiAgent,
@@ -21,9 +27,13 @@ enum SourceKind {
     System,
 }
 
+/// 将进程证据映射为用户可读来源应用的规则。
 struct SourceRule {
+    /// 用户可读的来源应用名称。
     display: &'static str,
+    /// 来源应用类型。
     kind: SourceKind,
+    /// 用于匹配进程名称、命令或可执行路径的关键词。
     needles: &'static [&'static str],
 }
 
@@ -184,12 +194,13 @@ const SOURCE_RULES: &[SourceRule] = &[
     },
 ];
 
+/// 根据进程证据推断前端归因 VO 和列表分类 VO。
 pub fn infer_port_context(
     port: u16,
     owner_name: &str,
     owner_location: &str,
     chain: &[ProcessEvidence],
-) -> (PortAttribution, PortClassification) {
+) -> (PortAttributionVO, PortClassificationVO) {
     let source = best_source(chain);
     let upstream_source = source
         .as_ref()
@@ -251,7 +262,7 @@ pub fn infer_port_context(
     );
 
     (
-        PortAttribution {
+        PortAttributionVO {
             display_name,
             summary,
             summary_en,
@@ -269,6 +280,7 @@ pub fn infer_port_context(
     )
 }
 
+/// 选择距离监听进程最近且有解释力的来源应用。
 fn best_source(chain: &[ProcessEvidence]) -> Option<&'static SourceRule> {
     for item in chain.iter().rev() {
         for kind in [
@@ -292,6 +304,7 @@ fn best_source(chain: &[ProcessEvidence]) -> Option<&'static SourceRule> {
     None
 }
 
+/// 查找只应作为上游上下文展示的更高层来源应用。
 fn best_upstream_source(
     chain: &[ProcessEvidence],
     selected_display: &str,
@@ -309,6 +322,7 @@ fn best_upstream_source(
     None
 }
 
+/// 检查来源规则，不使用 cwd 以避免项目路径误判。
 fn matches_rule(rule: &SourceRule, item: &ProcessEvidence) -> bool {
     let text = source_text(item);
     rule.needles
@@ -316,6 +330,7 @@ fn matches_rule(rule: &SourceRule, item: &ProcessEvidence) -> bool {
         .any(|needle| text.contains(&needle.to_ascii_lowercase()))
 }
 
+/// 仅根据进程身份信息构建来源匹配文本。
 fn source_text(item: &ProcessEvidence) -> String {
     format!(
         "{} {} {}",
@@ -326,6 +341,7 @@ fn source_text(item: &ProcessEvidence) -> String {
     .to_ascii_lowercase()
 }
 
+/// 构建用于启动器、框架和运行时识别的宽匹配文本。
 fn searchable_text(item: &ProcessEvidence) -> String {
     format!(
         "{} {} {} {}",
@@ -337,6 +353,7 @@ fn searchable_text(item: &ProcessEvidence) -> String {
     .to_ascii_lowercase()
 }
 
+/// 识别启动服务的命令或包管理器。
 fn detect_launcher(chain: &[ProcessEvidence]) -> Option<String> {
     let text = chain
         .iter()
@@ -365,6 +382,7 @@ fn detect_launcher(chain: &[ProcessEvidence]) -> Option<String> {
     }
 }
 
+/// 根据进程命令和可执行文件路径识别已知框架。
 fn detect_framework(
     chain: &[ProcessEvidence],
     owner_name: &str,
@@ -405,6 +423,7 @@ fn detect_framework(
     }
 }
 
+/// 识别监听进程所属运行时。
 fn detect_runtime(
     owner_name: &str,
     owner_location: &str,
@@ -437,6 +456,7 @@ fn detect_runtime(
     }
 }
 
+/// 根据最近可用的 cwd 推断项目名称。
 fn detect_project(chain: &[ProcessEvidence]) -> Option<String> {
     chain
         .iter()
@@ -449,6 +469,7 @@ fn detect_project(chain: &[ProcessEvidence]) -> Option<String> {
         .next()
 }
 
+/// 为前端构建简洁的进程链标签。
 fn compact_label(item: &ProcessEvidence) -> String {
     if let Some(command) = item
         .command
@@ -465,6 +486,7 @@ fn compact_label(item: &ProcessEvidence) -> String {
     }
 }
 
+/// 记录参与归因判断的证据类型。
 fn collect_evidence(
     source: Option<&SourceRule>,
     launcher: Option<&String>,
@@ -486,6 +508,7 @@ fn collect_evidence(
     evidence
 }
 
+/// 将证据覆盖度转换为粗粒度置信度。
 fn confidence(
     source: Option<&SourceRule>,
     launcher: Option<&String>,
@@ -506,6 +529,7 @@ fn confidence(
     }
 }
 
+/// 判断端口是否应进入默认开发端口列表。
 fn classify(
     port: u16,
     source: Option<&SourceRule>,
@@ -514,7 +538,7 @@ fn classify(
     runtime: Option<&String>,
     owner_name: &str,
     owner_location: &str,
-) -> PortClassification {
+) -> PortClassificationVO {
     if framework.is_some() || launcher.is_some() {
         return visible("dev-server");
     }
@@ -543,26 +567,30 @@ fn classify(
     hidden("unknown", "非关注端口")
 }
 
-fn visible(category: &str) -> PortClassification {
-    PortClassification {
+/// 构建默认可见的分类 VO。
+fn visible(category: &str) -> PortClassificationVO {
+    PortClassificationVO {
         category: category.to_string(),
         visibility: "focused".to_string(),
         hidden_reason: None,
     }
 }
 
-fn hidden(category: &str, reason: &str) -> PortClassification {
-    PortClassification {
+/// 构建默认隐藏的分类 VO，并附带用户可读原因。
+fn hidden(category: &str, reason: &str) -> PortClassificationVO {
+    PortClassificationVO {
         category: category.to_string(),
         visibility: "hidden".to_string(),
         hidden_reason: Some(reason.to_string()),
     }
 }
 
+/// 判断端口是否属于常见开发端口范围。
 fn is_common_dev_port(port: u16) -> bool {
     (3000..=9999).contains(&port) || matches!(port, 5173 | 4173 | 8000 | 8080)
 }
 
+/// 将内部来源类型映射为前端来源类型字符串。
 fn source_type_label(kind: SourceKind) -> &'static str {
     match kind {
         SourceKind::AiAgent => "ai-agent",
@@ -575,6 +603,7 @@ fn source_type_label(kind: SourceKind) -> &'static str {
     }
 }
 
+/// 构建详情抽屉展示的中文归因摘要。
 fn build_summary(
     port: u16,
     source_app: Option<&str>,
@@ -612,6 +641,7 @@ fn build_summary(
     summary
 }
 
+/// 构建详情抽屉展示的英文归因摘要。
 fn build_summary_en(
     port: u16,
     source_app: Option<&str>,

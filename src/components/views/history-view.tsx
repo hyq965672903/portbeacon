@@ -7,11 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { AppCopy, HistoryAction, HistoryEntry } from "@/types/app";
+import type { AppCopy, HistoryAction, HistoryEventVO } from "@/types/app";
 
 type HistoryViewProps = {
   copy: AppCopy;
-  entries: HistoryEntry[];
+  entries: HistoryEventVO[];
   error: string | null;
   historyFilter: string;
   loading: boolean;
@@ -53,8 +53,8 @@ function formatTimestamp(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
-function groupHistoryByPort(entries: HistoryEntry[]) {
-  const groups = new Map<number, HistoryEntry[]>();
+function groupHistoryByPort(entries: HistoryEventVO[]) {
+  const groups = new Map<number, HistoryEventVO[]>();
 
   for (const entry of entries) {
     const group = groups.get(entry.port) ?? [];
@@ -73,7 +73,7 @@ function groupHistoryByPort(entries: HistoryEntry[]) {
 
 type HistoryDetailDrawerProps = {
   copy: AppCopy;
-  entry: HistoryEntry;
+  entry: HistoryEventVO;
   onClose: () => void;
 };
 
@@ -135,7 +135,7 @@ type HistoryGroupsProps = {
   expandedPorts: Set<number>;
   groups: ReturnType<typeof groupHistoryByPort>;
   search: string;
-  onSelectEntry: (entry: HistoryEntry) => void;
+  onSelectEntry: (entry: HistoryEventVO) => void;
   onTogglePort: (port: number) => void;
 };
 
@@ -249,7 +249,7 @@ export function HistoryView({
   onSearchChange,
 }: HistoryViewProps) {
   const [expandedPorts, setExpandedPorts] = useState<Set<number>>(new Set());
-  const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<HistoryEventVO | null>(null);
   const groups = useMemo(() => groupHistoryByPort(entries), [entries]);
   const portOptions = useMemo(() => groups.map((group) => group.port), [groups]);
 

@@ -6,12 +6,13 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 use crate::core::history::insert_history_event;
-use crate::core::models::{HistoryEntry, PortSnapshot};
+use crate::core::models::{HistoryEventPO, PortSnapshot};
 use crate::core::ports::scanner::scan_port_snapshots;
 
 const MONITOR_INTERVAL: Duration = Duration::from_secs(2);
 static MONITOR_STARTED: AtomicBool = AtomicBool::new(false);
 
+/// 启动后台端口监控，用于记录端口生命周期变化。
 pub fn start_port_monitor(app: AppHandle) {
     if MONITOR_STARTED.swap(true, Ordering::SeqCst) {
         return;
@@ -21,7 +22,7 @@ pub fn start_port_monitor(app: AppHandle) {
         let mut previous = match scan_port_snapshots() {
             Ok(snapshots) => snapshots,
             Err(error) => {
-                let _ = insert_history_event(&HistoryEntry::monitor_error(error));
+                let _ = insert_history_event(&HistoryEventPO::monitor_error(error));
                 HashMap::new()
             }
         };
@@ -32,7 +33,7 @@ pub fn start_port_monitor(app: AppHandle) {
             let current = match scan_port_snapshots() {
                 Ok(snapshots) => snapshots,
                 Err(error) => {
-                    let _ = insert_history_event(&HistoryEntry::monitor_error(error));
+                    let _ = insert_history_event(&HistoryEventPO::monitor_error(error));
                     let _ = app.emit("history-updated", ());
                     continue;
                 }
@@ -51,21 +52,22 @@ pub fn start_port_monitor(app: AppHandle) {
     });
 }
 
+/// 对比两次端口快照，并为变化生成历史事件。
 fn diff_snapshots(
     previous: &HashMap<String, PortSnapshot>,
     current: &HashMap<String, PortSnapshot>,
-) -> Vec<HistoryEntry> {
+) -> Vec<HistoryEventPO> {
     let mut events = Vec::new();
 
     for (key, snapshot) in current {
         match previous.get(key) {
-            None => events.push(HistoryEntry::from_snapshot(
+            None => events.push(HistoryEventPO::from_snapshot(
                 "detected",
                 snapshot,
                 "Port observed",
             )),
             Some(previous_snapshot) if previous_snapshot.pid != snapshot.pid => {
-                events.push(HistoryEntry::from_snapshot(
+                events.push(HistoryEventPO::from_snapshot(
                     "replaced",
                     snapshot,
                     "Port owner changed",
@@ -77,7 +79,7 @@ fn diff_snapshots(
 
     for (key, snapshot) in previous {
         if !current.contains_key(key) {
-            events.push(HistoryEntry::from_snapshot(
+            events.push(HistoryEventPO::from_snapshot(
                 "released",
                 snapshot,
                 "Port disappeared",
