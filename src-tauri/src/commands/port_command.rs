@@ -3,8 +3,9 @@ use tauri::{AppHandle, Emitter};
 use crate::modules::history::model::HistoryEventPO;
 use crate::modules::history::service::insert_history_event;
 use crate::modules::port::model::{
-    KillProcessQO, PortListQO, PortListVO, ProcessSnapshot, ProcessTreeNodeVO,
+    KillProcessQO, PortListQO, PortListVO, PortMonitorConfigQO, ProcessSnapshot, ProcessTreeNodeVO,
 };
+use crate::modules::port::monitor::set_monitor_interval_seconds;
 use crate::modules::port::process::{get_process_tree as build_process_tree, stop_process};
 use crate::modules::port::service::list_ports as query_ports;
 
@@ -47,4 +48,11 @@ pub fn get_process_tree(pid: u32) -> Result<Option<ProcessTreeNodeVO>, String> {
 #[tauri::command]
 pub fn list_ports(request: PortListQO) -> Result<PortListVO, String> {
     query_ports(request)
+}
+
+/// 更新后台端口监控配置。
+#[tauri::command]
+pub fn set_port_monitor_config(request: PortMonitorConfigQO) -> Result<(), String> {
+    set_monitor_interval_seconds(request.interval_seconds);
+    Ok(())
 }

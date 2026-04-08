@@ -12,7 +12,7 @@ import { navItems } from "@/data/menu";
 import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { listHistory } from "@/lib/history";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
-import { killProcess, listPorts } from "@/lib/ports";
+import { killProcess, listPorts, setPortMonitorConfig } from "@/lib/ports";
 import type { HistoryAction, HistoryEventVO, PortScope, PortServiceVO, View } from "@/types/app";
 
 function App() {
@@ -43,6 +43,7 @@ function App() {
   const [stoppingPid, setStoppingPid] = useState<number | null>(null);
   const [autoKill, setAutoKill] = useState(true);
   const [strictMode, setStrictMode] = useState(false);
+  const [monitorIntervalSeconds, setMonitorIntervalSeconds] = useState(2);
 
   const copy = messages[locale];
   const layoutMode = useLayoutMode();
@@ -53,6 +54,7 @@ function App() {
     const storedLocale = window.localStorage.getItem("portbeacon-locale");
     const storedTheme = window.localStorage.getItem("portbeacon-theme-mode");
     const storedPinnedPorts = window.localStorage.getItem("portbeacon-pinned-ports");
+    const storedMonitorInterval = window.localStorage.getItem("portbeacon-monitor-interval-seconds");
 
     if (storedLocale === "zh" || storedLocale === "en") {
       setLocale(storedLocale);
@@ -71,6 +73,10 @@ function App() {
       } catch {
         setPinnedPorts([]);
       }
+    }
+
+    if (storedMonitorInterval === "2" || storedMonitorInterval === "5" || storedMonitorInterval === "10") {
+      setMonitorIntervalSeconds(Number(storedMonitorInterval));
     }
   }, []);
 
@@ -103,6 +109,11 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem("portbeacon-pinned-ports", JSON.stringify(pinnedPorts));
   }, [pinnedPorts]);
+
+  useEffect(() => {
+    window.localStorage.setItem("portbeacon-monitor-interval-seconds", String(monitorIntervalSeconds));
+    setPortMonitorConfig({ intervalSeconds: monitorIntervalSeconds }).catch(() => undefined);
+  }, [monitorIntervalSeconds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -326,8 +337,10 @@ function App() {
               <SettingsView
                 copy={copy}
                 autoKill={autoKill}
+                monitorIntervalSeconds={monitorIntervalSeconds}
                 strictMode={strictMode}
                 onAutoKillChange={setAutoKill}
+                onMonitorIntervalSecondsChange={setMonitorIntervalSeconds}
                 onStrictModeChange={setStrictMode}
               />
             )}

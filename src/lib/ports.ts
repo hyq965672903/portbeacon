@@ -33,6 +33,12 @@ export type KillProcessQO = {
   protocol?: string;
 };
 
+/** 端口监控配置查询对象，传给后端 set_port_monitor_config。 */
+export type PortMonitorConfigQO = {
+  /** 后台端口采集间隔，单位为秒。 */
+  intervalSeconds: number;
+};
+
 export function listPorts(request: PortListQO) {
   return invoke<PortListVO>("list_ports", { request });
 }
@@ -43,4 +49,8 @@ export function getProcessTree(pid: number) {
 
 export function killProcess(request: KillProcessQO) {
   return invoke<void>("kill_process", { request });
+}
+
+export function setPortMonitorConfig(request: PortMonitorConfigQO) {
+  return invoke<void>("set_port_monitor_config", { request });
 }

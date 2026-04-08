@@ -53,16 +53,20 @@ function StatusPill({
 type SettingsViewProps = {
   copy: AppCopy;
   autoKill: boolean;
+  monitorIntervalSeconds: number;
   strictMode: boolean;
   onAutoKillChange: (value: boolean) => void;
+  onMonitorIntervalSecondsChange: (value: number) => void;
   onStrictModeChange: (value: boolean) => void;
 };
 
 export function SettingsView({
   copy,
   autoKill,
+  monitorIntervalSeconds,
   strictMode,
   onAutoKillChange,
+  onMonitorIntervalSecondsChange,
   onStrictModeChange,
 }: SettingsViewProps) {
   return (
@@ -121,6 +125,25 @@ export function SettingsView({
                 title={copy.settings.strictMode}
                 description={copy.settings.strictModeDesc}
                 control={<Switch checked={strictMode} onCheckedChange={onStrictModeChange} />}
+              />
+              <SettingRow
+                title={copy.settings.monitorInterval}
+                description={copy.settings.monitorIntervalDesc}
+                control={
+                  <Select
+                    value={String(monitorIntervalSeconds)}
+                    onValueChange={(value) => onMonitorIntervalSecondsChange(Number(value))}
+                  >
+                    <SelectTrigger className="h-8 w-[124px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">{copy.settings.interval2s}</SelectItem>
+                      <SelectItem value="5">{copy.settings.interval5s}</SelectItem>
+                      <SelectItem value="10">{copy.settings.interval10s}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                }
               />
               <SettingRow
                 title={copy.settings.logRetention}

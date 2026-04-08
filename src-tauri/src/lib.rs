@@ -3,7 +3,7 @@ mod modules;
 mod utils;
 
 use commands::history_command::list_history;
-use commands::port_command::{get_process_tree, kill_process, list_ports};
+use commands::port_command::{get_process_tree, kill_process, list_ports, set_port_monitor_config};
 use modules::history::service::init_history_database;
 use modules::port::monitor::start_port_monitor;
 
@@ -22,6 +22,7 @@ pub fn run() {
             list_ports,
             get_process_tree,
             kill_process,
+            set_port_monitor_config,
             list_history
         ])
         .run(tauri::generate_context!())

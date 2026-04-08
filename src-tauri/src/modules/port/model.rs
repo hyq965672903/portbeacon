@@ -26,6 +26,14 @@ pub struct KillProcessQO {
     pub protocol: Option<String>,
 }
 
+/// 端口监控配置查询对象，由前端传入后端。
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortMonitorConfigQO {
+    /// 后台端口采集间隔，单位为秒。
+    pub interval_seconds: u64,
+}
+
 /// 端口扫描快照，供后端内部比对和构建 VO 使用。
 #[derive(Clone, Debug)]
 pub struct PortSnapshot {

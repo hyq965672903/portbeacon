@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::thread;
 use std::time::Duration;
 
@@ -10,8 +10,18 @@ use crate::modules::history::service::insert_history_event;
 use crate::modules::port::model::PortSnapshot;
 use crate::modules::port::scanner::scan_port_snapshots;
 
-const MONITOR_INTERVAL: Duration = Duration::from_secs(2);
 static MONITOR_STARTED: AtomicBool = AtomicBool::new(false);
+static MONITOR_INTERVAL_SECONDS: AtomicU64 = AtomicU64::new(2);
+
+/// 更新后台端口采集间隔。
+pub fn set_monitor_interval_seconds(seconds: u64) {
+    MONITOR_INTERVAL_SECONDS.store(seconds.clamp(1, 60), Ordering::SeqCst);
+}
+
+/// 读取当前后台端口采集间隔。
+fn monitor_interval() -> Duration {
+    Duration::from_secs(MONITOR_INTERVAL_SECONDS.load(Ordering::SeqCst))
+}
 
 /// 启动后台端口监控，用于记录端口生命周期变化。
 pub fn start_port_monitor(app: AppHandle) {
@@ -29,7 +39,7 @@ pub fn start_port_monitor(app: AppHandle) {
         };
 
         loop {
-            thread::sleep(MONITOR_INTERVAL);
+            thread::sleep(monitor_interval());
 
             let current = match scan_port_snapshots() {
                 Ok(snapshots) => snapshots,
