@@ -79,6 +79,10 @@ export type PortAttributionVO = {
   project: string | null;
   /** 归因置信度。 */
   confidence: "high" | "medium" | "low";
+  /** 归因打分总分。 */
+  scoreTotal: number;
+  /** 归因打分原因列表。 */
+  scoreReasons: string[];
   /** 命中的证据类型列表。 */
   evidence: string[];
   /** 简化后的进程链标签。 */
@@ -89,10 +93,42 @@ export type PortAttributionVO = {
 export type PortClassificationVO = {
   /** 分类标识，例如 dev-server、system-service、ide-background。 */
   category: string;
-  /** 可见性，focused 表示默认开发端口可见，hidden 表示默认隐藏。 */
-  visibility: "focused" | "hidden";
-  /** 被隐藏时的原因说明。 */
-  hiddenReason: string | null;
+  /** 可见性，focused 表示进入开发端口视图，collapsed 表示默认折叠但仍在全部端口中展示。 */
+  visibility: "focused" | "collapsed";
+  /** 默认折叠时的原因说明。 */
+  collapsedReason: string | null;
+};
+
+/** 用户归因修正规则，来自后端 portbeacon-rules.json。 */
+export type UserFeedbackRuleVO = {
+  /** 规则 ID。 */
+  id: string;
+  /** 规则名称。 */
+  name: string;
+  /** 是否启用。 */
+  enabled: boolean;
+  /** 匹配条件。 */
+  matcher: UserFeedbackMatcherVO;
+  /** 覆盖后的分类。 */
+  category: string;
+  /** 覆盖后的默认可见性。 */
+  visibility: "focused" | "collapsed";
+  /** 覆盖原因。 */
+  reason: string | null;
+};
+
+/** 用户归因修正规则匹配条件。 */
+export type UserFeedbackMatcherVO = {
+  /** 匹配端口号。 */
+  ports?: number[] | null;
+  /** 匹配 owner 进程名。 */
+  processNameIncludes?: string[] | null;
+  /** 匹配命令行。 */
+  commandIncludes?: string[] | null;
+  /** 匹配可执行路径。 */
+  executableIncludes?: string[] | null;
+  /** 匹配工作目录。 */
+  cwdIncludes?: string[] | null;
 };
 
 /** 历史事件视图对象，返回给前端展示。 */

@@ -34,6 +34,14 @@ pub struct PortMonitorConfigQO {
     pub interval_seconds: u64,
 }
 
+/// 端口分析配置查询对象，由前端传入后端。
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortAnalysisConfigQO {
+    /// 是否启用主动服务指纹探测。
+    pub active_fingerprint_enabled: bool,
+}
+
 /// 端口扫描快照，供后端内部比对和构建 VO 使用。
 #[derive(Clone, Debug)]
 pub struct PortSnapshot {
@@ -129,6 +137,10 @@ pub struct PortAttributionVO {
     pub project: Option<String>,
     /// 归因置信度，high、medium 或 low。
     pub confidence: String,
+    /// 归因打分总分。
+    pub score_total: i32,
+    /// 归因打分原因列表。
+    pub score_reasons: Vec<String>,
     /// 命中的证据类型列表。
     pub evidence: Vec<String>,
     /// 简化后的进程链标签。
@@ -141,10 +153,10 @@ pub struct PortAttributionVO {
 pub struct PortClassificationVO {
     /// 分类标识，例如 dev-server、system-service、ide-background。
     pub category: String,
-    /// 可见性，focused 表示默认开发端口可见，hidden 表示默认隐藏。
+    /// 可见性，focused 表示进入开发端口视图，collapsed 表示默认折叠但仍在全部端口中展示。
     pub visibility: String,
-    /// 被隐藏时的原因说明。
-    pub hidden_reason: Option<String>,
+    /// 默认折叠时的原因说明。
+    pub collapsed_reason: Option<String>,
 }
 
 /// 进程树节点视图对象，返回给前端详情抽屉展示。

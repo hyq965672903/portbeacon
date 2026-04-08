@@ -12,8 +12,16 @@ import { navItems } from "@/data/menu";
 import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { listHistory } from "@/lib/history";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
-import { killProcess, listPorts, setPortMonitorConfig } from "@/lib/ports";
-import type { HistoryAction, HistoryEventVO, PortScope, PortServiceVO, View } from "@/types/app";
+import {
+  deletePortRule,
+  killProcess,
+  listPortRules,
+  listPorts,
+  savePortRule,
+  setPortAnalysisConfig,
+  setPortMonitorConfig,
+} from "@/lib/ports";
+import type { HistoryAction, HistoryEventVO, PortScope, PortServiceVO, UserFeedbackRuleVO, View } from "@/types/app";
 
 function App() {
   const [view, setView] = useState<View>("ports");
@@ -44,6 +52,9 @@ function App() {
   const [autoKill, setAutoKill] = useState(true);
   const [strictMode, setStrictMode] = useState(false);
   const [monitorIntervalSeconds, setMonitorIntervalSeconds] = useState(2);
+  const [activeFingerprintEnabled, setActiveFingerprintEnabled] = useState(true);
+  const [portRules, setPortRules] = useState<UserFeedbackRuleVO[]>([]);
+  const [portRulesError, setPortRulesError] = useState<string | null>(null);
 
   const copy = messages[locale];
   const layoutMode = useLayoutMode();
@@ -55,6 +66,7 @@ function App() {
     const storedTheme = window.localStorage.getItem("portbeacon-theme-mode");
     const storedPinnedPorts = window.localStorage.getItem("portbeacon-pinned-ports");
     const storedMonitorInterval = window.localStorage.getItem("portbeacon-monitor-interval-seconds");
+    const storedActiveFingerprint = window.localStorage.getItem("portbeacon-active-fingerprint-enabled");
 
     if (storedLocale === "zh" || storedLocale === "en") {
       setLocale(storedLocale);
@@ -77,6 +89,10 @@ function App() {
 
     if (storedMonitorInterval === "2" || storedMonitorInterval === "5" || storedMonitorInterval === "10") {
       setMonitorIntervalSeconds(Number(storedMonitorInterval));
+    }
+
+    if (storedActiveFingerprint === "false") {
+      setActiveFingerprintEnabled(false);
     }
   }, []);
 
@@ -114,6 +130,21 @@ function App() {
     window.localStorage.setItem("portbeacon-monitor-interval-seconds", String(monitorIntervalSeconds));
     setPortMonitorConfig({ intervalSeconds: monitorIntervalSeconds }).catch(() => undefined);
   }, [monitorIntervalSeconds]);
+
+  useEffect(() => {
+    window.localStorage.setItem("portbeacon-active-fingerprint-enabled", String(activeFingerprintEnabled));
+    setPortAnalysisConfig({ activeFingerprintEnabled }).catch(() => undefined);
+    requestPortsRefresh("quiet");
+  }, [activeFingerprintEnabled]);
+
+  useEffect(() => {
+    listPortRules()
+      .then((rules) => {
+        setPortRules(rules);
+        setPortRulesError(null);
+      })
+      .catch((error) => setPortRulesError(error instanceof Error ? error.message : String(error)));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -246,6 +277,28 @@ function App() {
     setPortsRefreshKey((value) => value + 1);
   }
 
+  async function handlePortRuleChange(rule: UserFeedbackRuleVO) {
+    try {
+      const rules = await savePortRule(rule);
+      setPortRules(rules);
+      setPortRulesError(null);
+      requestPortsRefresh("quiet");
+    } catch (error) {
+      setPortRulesError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function handlePortRuleDelete(id: string) {
+    try {
+      const rules = await deletePortRule(id);
+      setPortRules(rules);
+      setPortRulesError(null);
+      requestPortsRefresh("quiet");
+    } catch (error) {
+      setPortRulesError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   async function confirmStopService() {
     if (!pendingStopService || stoppingPid !== null || pendingStopService.pid === 0) {
       return;
@@ -337,10 +390,16 @@ function App() {
               <SettingsView
                 copy={copy}
                 autoKill={autoKill}
+                activeFingerprintEnabled={activeFingerprintEnabled}
                 monitorIntervalSeconds={monitorIntervalSeconds}
+                portRules={portRules}
+                portRulesError={portRulesError}
                 strictMode={strictMode}
                 onAutoKillChange={setAutoKill}
+                onActiveFingerprintEnabledChange={setActiveFingerprintEnabled}
                 onMonitorIntervalSecondsChange={setMonitorIntervalSeconds}
+                onPortRuleChange={handlePortRuleChange}
+                onPortRuleDelete={handlePortRuleDelete}
                 onStrictModeChange={setStrictMode}
               />
             )}

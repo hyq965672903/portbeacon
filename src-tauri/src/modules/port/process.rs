@@ -1,12 +1,17 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
 use sysinfo::{Pid, ProcessesToUpdate, System};
 
-use crate::modules::port::attribution::{infer_port_context, ProcessEvidence};
+use crate::modules::analysis::{apply_feedback_override, infer_port_context, ProcessEvidence};
 use crate::modules::port::model::{
-    KillProcessQO, PortServiceVO, ProcessSnapshot, ProcessTreeNodeVO,
+    KillProcessQO, PortAttributionVO, PortClassificationVO, PortServiceVO, ProcessSnapshot,
+    ProcessTreeNodeVO,
 };
+
+type AttributionCacheValue = (PortAttributionVO, PortClassificationVO);
+static ATTRIBUTION_CACHE: OnceLock<Mutex<HashMap<String, AttributionCacheValue>>> = OnceLock::new();
 
 /// 为监听进程构建从父到子的进程树。
 pub fn get_process_tree(pid: u32) -> Option<ProcessTreeNodeVO> {
@@ -92,7 +97,7 @@ pub fn build_service(
         .unwrap_or_else(|| "-".to_string());
     let chain = collect_process_chain(system, pid);
     let evidence = chain.iter().map(ProcessEvidence::from).collect::<Vec<_>>();
-    let (attribution, classification) = infer_port_context(port, &name, &location, &evidence);
+    let (attribution, classification) = cached_port_context(&id, port, &name, &location, &evidence);
 
     PortServiceVO {
         id,
@@ -109,6 +114,53 @@ pub fn build_service(
         attribution,
         classification,
     }
+}
+
+/// 按 protocol:port:pid 缓存归因结果，避免同一 owner 在自动刷新中重复重算。
+fn cached_port_context(
+    cache_key: &str,
+    port: u16,
+    name: &str,
+    location: &str,
+    evidence: &[ProcessEvidence],
+) -> AttributionCacheValue {
+    let cache = ATTRIBUTION_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+
+    if let Ok(cache) = cache.lock() {
+        if let Some(value) = cache.get(cache_key) {
+            return apply_feedback_to_value(value.clone(), port, name, location, evidence);
+        }
+    }
+
+    let value = infer_port_context(port, name, location, evidence);
+    if let Ok(mut cache) = cache.lock() {
+        cache.insert(cache_key.to_string(), value.clone());
+    }
+
+    apply_feedback_to_value(value, port, name, location, evidence)
+}
+
+/// 清空归因缓存，用于规则或指纹配置变更后立即生效。
+pub fn clear_attribution_cache() {
+    if let Some(cache) = ATTRIBUTION_CACHE.get() {
+        if let Ok(mut cache) = cache.lock() {
+            cache.clear();
+        }
+    }
+}
+
+/// 对缓存的系统推断结果应用最新用户规则，不把用户规则结果写进缓存。
+fn apply_feedback_to_value(
+    value: AttributionCacheValue,
+    port: u16,
+    name: &str,
+    location: &str,
+    evidence: &[ProcessEvidence],
+) -> AttributionCacheValue {
+    let (attribution, classification) = value;
+    let classification = apply_feedback_override(classification, port, name, location, evidence);
+
+    (attribution, classification)
 }
 
 /// 将线性父进程链转换为嵌套进程树 VO。

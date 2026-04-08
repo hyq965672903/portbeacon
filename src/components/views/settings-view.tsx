@@ -1,12 +1,14 @@
-import { Activity, ShieldCheck, Wifi } from "lucide-react";
+import { Activity, Plus, ShieldCheck, Trash2, Wifi } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import type { AppCopy } from "@/types/app";
+import type { AppCopy, UserFeedbackRuleVO } from "@/types/app";
 
 function SettingRow({
   title,
@@ -52,23 +54,62 @@ function StatusPill({
 
 type SettingsViewProps = {
   copy: AppCopy;
+  activeFingerprintEnabled: boolean;
   autoKill: boolean;
   monitorIntervalSeconds: number;
+  portRules: UserFeedbackRuleVO[];
+  portRulesError: string | null;
   strictMode: boolean;
+  onActiveFingerprintEnabledChange: (value: boolean) => void;
   onAutoKillChange: (value: boolean) => void;
   onMonitorIntervalSecondsChange: (value: number) => void;
+  onPortRuleChange: (rule: UserFeedbackRuleVO) => void;
+  onPortRuleDelete: (id: string) => void;
   onStrictModeChange: (value: boolean) => void;
 };
 
 export function SettingsView({
   copy,
+  activeFingerprintEnabled,
   autoKill,
   monitorIntervalSeconds,
+  portRules,
+  portRulesError,
   strictMode,
+  onActiveFingerprintEnabledChange,
   onAutoKillChange,
   onMonitorIntervalSecondsChange,
+  onPortRuleChange,
+  onPortRuleDelete,
   onStrictModeChange,
 }: SettingsViewProps) {
+  const [rulePort, setRulePort] = useState("");
+  const [ruleName, setRuleName] = useState("");
+  const [ruleVisibility, setRuleVisibility] = useState<"focused" | "collapsed">("focused");
+
+  function createPortRule() {
+    const port = Number(rulePort);
+    if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+      return;
+    }
+
+    const visibility = ruleVisibility;
+    const name = ruleName.trim() || `${visibility === "focused" ? copy.settings.ruleFocusPrefix : copy.settings.ruleCollapsePrefix} ${port}`;
+    const rule: UserFeedbackRuleVO = {
+      id: `user-port-${port}-${visibility}`,
+      name,
+      enabled: true,
+      matcher: { ports: [port] },
+      category: visibility === "focused" ? "dev-server" : "user-collapsed",
+      visibility,
+      reason: visibility === "focused" ? copy.settings.ruleFocusedReason : copy.settings.ruleCollapsedReason,
+    };
+
+    onPortRuleChange(rule);
+    setRulePort("");
+    setRuleName("");
+  }
+
   return (
     <div className="h-full min-h-0 overflow-y-auto custom-scrollbar">
       <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-3">
@@ -146,6 +187,11 @@ export function SettingsView({
                 }
               />
               <SettingRow
+                title={copy.settings.activeFingerprint}
+                description={copy.settings.activeFingerprintDesc}
+                control={<Switch checked={activeFingerprintEnabled} onCheckedChange={onActiveFingerprintEnabledChange} />}
+              />
+              <SettingRow
                 title={copy.settings.logRetention}
                 description={copy.settings.logRetentionDesc}
                 control={
@@ -185,7 +231,101 @@ export function SettingsView({
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardContent className="space-y-3 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-[var(--muted-foreground)]">{copy.settings.ruleManagerDesc}</p>
+                <h3 className="text-base font-semibold">{copy.settings.ruleManager}</h3>
+              </div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)] px-2.5 py-1 text-xs text-[var(--muted-foreground)]">
+                {portRules.length} {copy.settings.rules}
+              </div>
+            </div>
+
+            <div className="grid gap-2 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/58 p-2 md:grid-cols-[160px_minmax(0,1fr)_130px_auto]">
+              <Input
+                className="h-9 text-xs"
+                inputMode="numeric"
+                placeholder={copy.settings.rulePortPlaceholder}
+                value={rulePort}
+                onChange={(event) => setRulePort(event.target.value)}
+              />
+              <Input
+                className="h-9 text-xs"
+                placeholder={copy.settings.ruleNamePlaceholder}
+                value={ruleName}
+                onChange={(event) => setRuleName(event.target.value)}
+              />
+              <Select value={ruleVisibility} onValueChange={(value) => setRuleVisibility(value as "focused" | "collapsed")}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="focused">{copy.settings.ruleFocused}</SelectItem>
+                  <SelectItem value="collapsed">{copy.settings.ruleCollapsed}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="sm" onClick={createPortRule}>
+                <Plus className="size-3.5" />
+                {copy.settings.addRule}
+              </Button>
+            </div>
+
+            {portRulesError && (
+              <div className="rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-3 py-2 text-xs text-[var(--destructive)]">
+                {portRulesError}
+              </div>
+            )}
+
+            <div className="grid gap-2">
+              {portRules.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-[var(--border)] p-4 text-center text-xs text-[var(--muted-foreground)]">
+                  {copy.settings.ruleEmpty}
+                </div>
+              ) : (
+                portRules.map((rule) => (
+                  <div
+                    key={rule.id}
+                    className="grid gap-2 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/58 px-3 py-2 md:grid-cols-[minmax(0,1fr)_auto_auto]"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold">{rule.name}</p>
+                        <span className="rounded-full bg-[var(--card)] px-2 py-0.5 text-[10px] text-[var(--muted-foreground)]">
+                          {rule.visibility === "focused" ? copy.settings.ruleFocused : copy.settings.ruleCollapsed}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate font-mono text-[11px] text-[var(--muted-foreground)]">
+                        {describeRule(rule)}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={rule.enabled}
+                      onCheckedChange={(enabled) => onPortRuleChange({ ...rule, enabled })}
+                    />
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => onPortRuleDelete(rule.id)}>
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
+}
+
+function describeRule(rule: UserFeedbackRuleVO) {
+  const parts = [
+    rule.matcher.ports?.length ? `ports=${rule.matcher.ports.join(",")}` : "",
+    rule.matcher.processNameIncludes?.length ? `process=${rule.matcher.processNameIncludes.join("|")}` : "",
+    rule.matcher.executableIncludes?.length ? `exe=${rule.matcher.executableIncludes.join("|")}` : "",
+    rule.matcher.cwdIncludes?.length ? `cwd=${rule.matcher.cwdIncludes.join("|")}` : "",
+  ].filter(Boolean);
+
+  return parts.join(" · ") || rule.category;
 }

@@ -502,10 +502,22 @@ export function PortsView({
                     <p className="mt-1 font-semibold">{selectedService.attribution.confidence}</p>
                   </div>
                 </div>
-                {selectedService.classification.hiddenReason && (
+                {selectedService.classification.collapsedReason && (
                   <p className="mt-3 rounded-lg bg-[var(--secondary)] p-2 text-xs text-[var(--muted-foreground)]">
-                    {copy.ports.hiddenItem}: {selectedService.classification.hiddenReason}
+                    {copy.ports.collapsedItem}: {selectedService.classification.collapsedReason}
                   </p>
+                )}
+                {selectedService.attribution.scoreReasons.length > 0 && (
+                  <div className="mt-3 rounded-lg bg-[var(--secondary)] p-2 text-xs text-[var(--muted-foreground)]">
+                    <p className="font-semibold text-[var(--foreground)]">
+                      {copy.ports.scoringReasons} · {selectedService.attribution.scoreTotal}
+                    </p>
+                    <ul className="mt-1 space-y-1">
+                      {selectedService.attribution.scoreReasons.slice(0, 5).map((reason) => (
+                        <li key={reason}>{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </section>
 

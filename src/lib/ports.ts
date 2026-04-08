@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import type { ProcessTreeNodeVO, PortServiceVO } from "@/types/app";
+import type { ProcessTreeNodeVO, PortServiceVO, UserFeedbackRuleVO } from "@/types/app";
 import type { PortScope } from "@/types/app";
 
 /** 端口列表视图对象，来自后端 list_ports。 */
@@ -39,6 +39,12 @@ export type PortMonitorConfigQO = {
   intervalSeconds: number;
 };
 
+/** 端口分析配置查询对象，传给后端 set_port_analysis_config。 */
+export type PortAnalysisConfigQO = {
+  /** 是否启用主动服务指纹探测。 */
+  activeFingerprintEnabled: boolean;
+};
+
 export function listPorts(request: PortListQO) {
   return invoke<PortListVO>("list_ports", { request });
 }
@@ -53,4 +59,20 @@ export function killProcess(request: KillProcessQO) {
 
 export function setPortMonitorConfig(request: PortMonitorConfigQO) {
   return invoke<void>("set_port_monitor_config", { request });
+}
+
+export function setPortAnalysisConfig(request: PortAnalysisConfigQO) {
+  return invoke<void>("set_port_analysis_config", { request });
+}
+
+export function listPortRules() {
+  return invoke<UserFeedbackRuleVO[]>("list_port_rules");
+}
+
+export function savePortRule(rule: UserFeedbackRuleVO) {
+  return invoke<UserFeedbackRuleVO[]>("save_port_rule", { rule });
+}
+
+export function deletePortRule(id: string) {
+  return invoke<UserFeedbackRuleVO[]>("delete_port_rule", { id });
 }

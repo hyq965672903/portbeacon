@@ -1,5 +1,6 @@
 use sysinfo::{ProcessesToUpdate, System};
 
+use crate::modules::analysis::refine_port_set_classification;
 use crate::modules::port::model::{PortListQO, PortListVO, PortServiceVO};
 use crate::modules::port::process::build_service;
 use crate::modules::port::scanner::scan_port_snapshots;
@@ -22,12 +23,15 @@ pub fn list_ports(request: PortListQO) -> Result<PortListVO, String> {
             snapshot.pid,
         );
 
-        if !request.matches_scope(&service) || !request.matches_search(&service) {
-            continue;
-        }
-
         services.push(service);
     }
+
+    refine_port_set_classification(&mut services);
+
+    let mut services = services
+        .into_iter()
+        .filter(|service| request.matches_scope(service) && request.matches_search(service))
+        .collect::<Vec<_>>();
 
     services.sort_by_key(|service| (service.port, service.pid));
 
