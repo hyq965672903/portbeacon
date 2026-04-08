@@ -183,16 +183,16 @@ function PortTableContent({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto custom-scrollbar">
-      <Table className="min-w-[960px] table-fixed">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+      <Table className="w-full table-fixed">
         <TableHeader className="sticky top-0 z-10 bg-[var(--card)] backdrop-blur">
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[132px]">{copy.table.port}</TableHead>
-            <TableHead className="w-[220px]">{copy.table.service}</TableHead>
-            <TableHead className="w-[260px]">{copy.table.source}</TableHead>
-            <TableHead className="w-[112px]">{copy.table.uptime}</TableHead>
-            <TableHead className="w-[136px]">{copy.table.resources}</TableHead>
-            <TableHead className="w-[100px] text-right">{copy.table.action}</TableHead>
+            <TableHead className="w-[92px] px-2">{copy.table.port}</TableHead>
+            <TableHead className="w-[150px] px-2">{copy.table.service}</TableHead>
+            <TableHead className="px-2">{copy.table.source}</TableHead>
+            <TableHead className="w-[82px] px-2">{copy.table.uptime}</TableHead>
+            <TableHead className="w-[104px] px-2">{copy.table.resources}</TableHead>
+            <TableHead className="w-[64px] px-2 text-right">{copy.table.action}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -206,13 +206,13 @@ function PortTableContent({
               )}
               onClick={() => onSelectService(service)}
             >
-              <TableCell className="font-mono text-[var(--primary)] transition-colors group-hover:text-[var(--foreground)]">
-                <div className="flex items-center gap-1.5">
+              <TableCell className="px-2 font-mono text-[var(--primary)] transition-colors group-hover:text-[var(--foreground)]">
+                <div className="flex min-w-0 items-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "size-7 text-[var(--muted-foreground)]",
+                      "size-6 shrink-0 text-[var(--muted-foreground)]",
                       pinnedPorts.includes(service.port) && "text-[var(--primary)]",
                     )}
                     aria-label={pinnedPorts.includes(service.port) ? copy.ports.unfavoritePort : copy.ports.favoritePort}
@@ -223,39 +223,40 @@ function PortTableContent({
                   >
                     <Star className={cn("size-3.5", pinnedPorts.includes(service.port) && "fill-current")} />
                   </Button>
-                  <span className="tabular-nums">{service.port}</span>
+                  <span className="truncate tabular-nums">{service.port}</span>
                 </div>
               </TableCell>
-              <TableCell>
-                <div className="flex min-w-0 items-center gap-2">
+              <TableCell className="min-w-0 px-2">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <div className="size-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
                   <div className="min-w-0">
                     <p className="truncate font-medium">{service.attribution.displayName}</p>
                   </div>
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="min-w-0 px-2">
                 <p className="truncate text-[12px] text-[var(--muted-foreground)]">
                   {compactSource(copy, service)}
                 </p>
               </TableCell>
-              <TableCell>
-                <div className="text-[12px] leading-4">
-                  <p>{service.uptime}</p>
-                  <p className="text-[11px] text-[var(--muted-foreground)]">{service.updatedAt}</p>
+              <TableCell className="px-2">
+                <div className="truncate text-[12px] leading-4" title={`${service.uptime} ${service.updatedAt}`}>
+                  {service.uptime}
                 </div>
               </TableCell>
-              <TableCell>
-                <div className="text-[11px] leading-4 text-[var(--muted-foreground)]">
-                  <p>CPU {service.cpu}</p>
-                  <p>MEM {service.memory}</p>
+              <TableCell className="px-2">
+                <div
+                  className="truncate text-[11px] leading-4 text-[var(--muted-foreground)]"
+                  title={`CPU ${service.cpu} / MEM ${service.memory}`}
+                >
+                  {service.cpu} / {service.memory}
                 </div>
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="px-2 text-right">
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="h-7 w-[64px] px-2"
+                  className="h-7 w-[52px] px-1.5 text-xs"
                   disabled={stoppingPid === service.pid || service.pid === 0}
                   onClick={(event) => {
                     event.stopPropagation();
