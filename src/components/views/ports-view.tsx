@@ -1,4 +1,4 @@
-import { Cpu, Folder, GitBranch, Hash, RefreshCw, Search, Star, X } from "lucide-react";
+import { Cpu, Folder, GitBranch, Hash, Pause, Play, RefreshCw, Search, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,15 @@ type PortsViewProps = {
   locale: Locale;
   services: PortServiceVO[];
   total: number;
-  page: number;
-  pageSize: number;
   loading: boolean;
   error: string | null;
   search: string;
   scope: PortScope;
+  autoRefresh: boolean;
   pinnedOnly: boolean;
   pinnedPorts: number[];
   stoppingPid: number | null;
-  onPageChange: (value: number) => void;
+  onAutoRefreshChange: (value: boolean) => void;
   onSearchChange: (value: string) => void;
   onScopeChange: (value: PortScope) => void;
   onPinnedOnlyChange: (value: boolean) => void;
@@ -279,16 +278,15 @@ export function PortsView({
   locale,
   services,
   total,
-  page,
-  pageSize,
   loading,
   error,
   search,
   scope,
+  autoRefresh,
   pinnedOnly,
   pinnedPorts,
   stoppingPid,
-  onPageChange,
+  onAutoRefreshChange,
   onSearchChange,
   onScopeChange,
   onPinnedOnlyChange,
@@ -297,19 +295,31 @@ export function PortsView({
   onRefresh,
 }: PortsViewProps) {
   const [selectedService, setSelectedService] = useState<PortServiceVO | null>(null);
+  const [selectedServiceStale, setSelectedServiceStale] = useState(false);
   const [processTree, setProcessTree] = useState<ProcessTreeNodeVO | null>(null);
   const [processTreeLoading, setProcessTreeLoading] = useState(false);
   const [processTreeError, setProcessTreeError] = useState<string | null>(null);
   const selectedServiceId = selectedService?.id;
   const selectedPid = selectedService?.pid ?? null;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const canGoPrevious = page > 1;
-  const canGoNext = page < totalPages;
 
   useEffect(() => {
     if (!selectedServiceId) return;
-    setSelectedService(services.find((service) => service.id === selectedServiceId) ?? null);
-  }, [selectedServiceId, services]);
+    if (loading) return;
+
+    const updatedService = services.find((service) => service.id === selectedServiceId);
+    if (updatedService) {
+      setSelectedService(updatedService);
+      setSelectedServiceStale(false);
+      return;
+    }
+
+    setSelectedServiceStale(true);
+  }, [loading, selectedServiceId, services]);
+
+  function selectService(service: PortServiceVO) {
+    setSelectedService(service);
+    setSelectedServiceStale(false);
+  }
 
   useEffect(() => {
     if (selectedPid === null) {
@@ -347,7 +357,7 @@ export function PortsView({
   return (
     <div className="relative flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       <Card className="shrink-0">
-        <CardContent className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 p-2">
+        <CardContent className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-2 p-2">
           <div className="flex min-w-0 gap-1 rounded-lg border border-[var(--border)] bg-[var(--secondary)] p-1">
             {scopeOptions.map((item) => (
               <Button
@@ -392,6 +402,16 @@ export function PortsView({
             <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
             {copy.ports.refresh}
           </Button>
+
+          <Button
+            variant={autoRefresh ? "secondary" : "outline"}
+            size="sm"
+            className="h-8 shrink-0 gap-1.5 px-3"
+            onClick={() => onAutoRefreshChange(!autoRefresh)}
+          >
+            {autoRefresh ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
+            {autoRefresh ? copy.ports.pauseAutoRefresh : copy.ports.resumeAutoRefresh}
+          </Button>
         </CardContent>
       </Card>
 
@@ -401,7 +421,7 @@ export function PortsView({
             copy={copy}
             error={error}
             loading={loading}
-            onSelectService={setSelectedService}
+            onSelectService={selectService}
             onStopService={onStopService}
             selectedServiceId={selectedServiceId}
             services={services}
@@ -412,28 +432,9 @@ export function PortsView({
 
           <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-t border-[var(--border)] bg-[var(--card)]/95 px-2.5 text-xs text-[var(--muted-foreground)] backdrop-blur">
             <span className="min-w-0 truncate">
-              {copy.ports.total} {total} {copy.ports.items} · {copy.ports.page} {page} {copy.ports.of} {totalPages}
+              {copy.ports.total} {total} {copy.ports.items} ·{" "}
+              {autoRefresh ? copy.ports.autoRefreshOn : copy.ports.autoRefreshPaused}
             </span>
-            <div className="flex shrink-0 gap-1.5">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="h-7 px-2.5"
-                disabled={!canGoPrevious || loading}
-                onClick={() => onPageChange(page - 1)}
-              >
-                {copy.ports.previous}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="h-7 px-2.5"
-                disabled={!canGoNext || loading}
-                onClick={() => onPageChange(page + 1)}
-              >
-                {copy.ports.next}
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -475,6 +476,11 @@ export function PortsView({
                 <span className="font-mono text-xl font-semibold text-[var(--primary)]">{selectedService.port}</span>
                 <span className="text-xs text-[var(--muted-foreground)]">PID {selectedService.pid}</span>
               </div>
+              {selectedServiceStale && (
+                <div className="mt-2 rounded-lg border border-[var(--destructive)]/25 bg-[var(--destructive)]/10 px-3 py-2 text-xs leading-5 text-[var(--destructive)]">
+                  {copy.ports.staleDetails}
+                </div>
+              )}
             </div>
 
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 custom-scrollbar">
@@ -559,7 +565,7 @@ export function PortsView({
               <Button
                 variant="destructive"
                 className="h-9 flex-1"
-                disabled={stoppingPid === selectedService.pid || selectedService.pid === 0}
+                disabled={selectedServiceStale || stoppingPid === selectedService.pid || selectedService.pid === 0}
                 onClick={() => onStopService(selectedService)}
               >
                 {stoppingPid === selectedService.pid ? copy.ports.stopping : copy.controls.stop}

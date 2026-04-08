@@ -36,6 +36,7 @@ pub fn start_port_monitor(app: AppHandle) {
                 Err(error) => {
                     let _ = insert_history_event(&HistoryEventPO::monitor_error(error));
                     let _ = app.emit("history-updated", ());
+                    let _ = app.emit("ports-updated", ());
                     continue;
                 }
             };
@@ -46,6 +47,7 @@ pub fn start_port_monitor(app: AppHandle) {
                     let _ = insert_history_event(&event);
                 }
                 let _ = app.emit("history-updated", ());
+                let _ = app.emit("ports-updated", ());
             }
 
             previous = current;

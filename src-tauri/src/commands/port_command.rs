@@ -32,6 +32,7 @@ pub fn kill_process(app: AppHandle, request: KillProcessQO) -> Result<(), String
 
     insert_history_event(&event)?;
     let _ = app.emit("history-updated", ());
+    let _ = app.emit("ports-updated", ());
 
     result
 }

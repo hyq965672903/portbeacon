@@ -3,24 +3,16 @@ import { invoke } from "@tauri-apps/api/core";
 import type { ProcessTreeNodeVO, PortServiceVO } from "@/types/app";
 import type { PortScope } from "@/types/app";
 
-/** 端口列表分页视图对象，来自后端 list_ports。 */
+/** 端口列表视图对象，来自后端 list_ports。 */
 export type PortListVO = {
-  /** 当前页端口记录。 */
+  /** 当前筛选条件下的端口记录。 */
   items: PortServiceVO[];
   /** 过滤后的总记录数。 */
   total: number;
-  /** 当前页码。 */
-  page: number;
-  /** 每页记录数。 */
-  pageSize: number;
 };
 
 /** 端口列表查询对象，传给后端 list_ports。 */
 export type PortListQO = {
-  /** 当前页码，从 1 开始。 */
-  page: number;
-  /** 每页记录数。 */
-  pageSize: number;
   /** 搜索关键词。 */
   search: string;
   /** 列表范围。 */

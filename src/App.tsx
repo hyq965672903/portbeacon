@@ -1,5 +1,5 @@
 import { listen } from "@tauri-apps/api/event";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { WorkspaceHeader } from "@/components/layout/workspace-header";
@@ -33,11 +33,11 @@ function App() {
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [pinnedPorts, setPinnedPorts] = useState<number[]>([]);
   const [services, setServices] = useState<PortServiceVO[]>([]);
-  const [portsPage, setPortsPage] = useState(1);
   const [portsTotal, setPortsTotal] = useState(0);
   const [portsLoading, setPortsLoading] = useState(false);
   const [portsError, setPortsError] = useState<string | null>(null);
   const [portsRefreshKey, setPortsRefreshKey] = useState(0);
+  const [portsAutoRefresh, setPortsAutoRefresh] = useState(true);
   const [pendingStopService, setPendingStopService] = useState<PortServiceVO | null>(null);
   const [stopError, setStopError] = useState<string | null>(null);
   const [stoppingPid, setStoppingPid] = useState<number | null>(null);
@@ -46,7 +46,8 @@ function App() {
 
   const copy = messages[locale];
   const layoutMode = useLayoutMode();
-  const portsPageSize = layoutMode === "compact" ? 8 : layoutMode === "wide" ? 16 : 12;
+  const hasLoadedPortsRef = useRef(false);
+  const portsRefreshModeRef = useRef<"visible" | "quiet">("visible");
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("portbeacon-locale");
@@ -94,8 +95,10 @@ function App() {
   }, [themeMode]);
 
   useEffect(() => {
-    setPortsPage(1);
-  }, [pinnedOnly, pinnedPorts, portScope, portsSearch, portsPageSize]);
+    if (view === "ports") {
+      setPortsAutoRefresh(true);
+    }
+  }, [view]);
 
   useEffect(() => {
     window.localStorage.setItem("portbeacon-pinned-ports", JSON.stringify(pinnedPorts));
@@ -103,12 +106,13 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
+    const showLoading = portsRefreshModeRef.current === "visible" || !hasLoadedPortsRef.current;
 
-    setPortsLoading(true);
+    if (showLoading) {
+      setPortsLoading(true);
+    }
     const timer = window.setTimeout(() => {
       listPorts({
-        page: portsPage,
-        pageSize: portsPageSize,
         search: portsSearch,
         scope: portScope,
         pinnedOnly,
@@ -122,12 +126,16 @@ function App() {
         })
         .catch((error) => {
           if (cancelled) return;
-          setServices([]);
-          setPortsTotal(0);
-          setPortsError(error instanceof Error ? error.message : String(error));
+          if (showLoading) {
+            setServices([]);
+            setPortsTotal(0);
+            setPortsError(error instanceof Error ? error.message : String(error));
+          }
         })
         .finally(() => {
           if (!cancelled) {
+            hasLoadedPortsRef.current = true;
+            portsRefreshModeRef.current = "visible";
             setPortsLoading(false);
           }
         });
@@ -137,7 +145,7 @@ function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [pinnedOnly, pinnedPorts, portScope, portsPage, portsPageSize, portsRefreshKey, portsSearch]);
+  }, [pinnedOnly, pinnedPorts, portScope, portsRefreshKey, portsSearch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,6 +189,30 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    let refreshTimer: number | undefined;
+    const unlistenPromise = listen("ports-updated", () => {
+      if (!portsAutoRefresh || view !== "ports") {
+        return;
+      }
+
+      if (refreshTimer !== undefined) {
+        window.clearTimeout(refreshTimer);
+      }
+
+      refreshTimer = window.setTimeout(() => {
+        requestPortsRefresh("quiet");
+      }, 300);
+    });
+
+    return () => {
+      if (refreshTimer !== undefined) {
+        window.clearTimeout(refreshTimer);
+      }
+      unlistenPromise.then((unlisten) => unlisten()).catch(() => undefined);
+    };
+  }, [portsAutoRefresh, view]);
+
   async function handleStopService(service: PortServiceVO) {
     if (stoppingPid !== null || service.pid === 0) {
       return;
@@ -198,6 +230,11 @@ function App() {
     );
   }
 
+  function requestPortsRefresh(mode: "visible" | "quiet" = "visible") {
+    portsRefreshModeRef.current = mode;
+    setPortsRefreshKey((value) => value + 1);
+  }
+
   async function confirmStopService() {
     if (!pendingStopService || stoppingPid !== null || pendingStopService.pid === 0) {
       return;
@@ -213,7 +250,7 @@ function App() {
         protocol: pendingStopService.protocol,
       });
       setPendingStopService(null);
-      setPortsRefreshKey((value) => value + 1);
+      requestPortsRefresh("visible");
       setHistoryRefreshKey((value) => value + 1);
     } catch (error) {
       setStopError(error instanceof Error ? error.message : String(error));
@@ -251,22 +288,21 @@ function App() {
                 locale={locale}
                 services={services}
                 total={portsTotal}
-                page={portsPage}
-                pageSize={portsPageSize}
                 loading={portsLoading}
                 error={portsError}
                 search={portsSearch}
                 scope={portScope}
+                autoRefresh={portsAutoRefresh}
                 pinnedOnly={pinnedOnly}
                 pinnedPorts={pinnedPorts}
                 stoppingPid={stoppingPid}
-                onPageChange={setPortsPage}
+                onAutoRefreshChange={setPortsAutoRefresh}
                 onPinnedOnlyChange={setPinnedOnly}
                 onPinnedPortToggle={togglePinnedPort}
                 onSearchChange={setPortsSearch}
                 onScopeChange={setPortScope}
                 onStopService={handleStopService}
-                onRefresh={() => setPortsRefreshKey((value) => value + 1)}
+                onRefresh={() => requestPortsRefresh("visible")}
               />
             )}
             {view === "history" && (

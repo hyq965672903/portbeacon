@@ -4,10 +4,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PortListQO {
-    /// 当前页码，从 1 开始。
-    pub page: usize,
-    /// 每页记录数。
-    pub page_size: usize,
     /// 搜索关键词，支持端口、PID、服务名、路径和归因字段。
     pub search: Option<String>,
     /// 列表范围，development 表示开发端口，all 表示全部端口。
@@ -192,12 +188,8 @@ impl ProcessTreeNodeVO {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PortListVO {
-    /// 当前页端口记录。
+    /// 当前筛选条件下的端口记录。
     pub items: Vec<PortServiceVO>,
     /// 过滤后的总记录数。
     pub total: usize,
-    /// 当前页码。
-    pub page: usize,
-    /// 每页记录数。
-    pub page_size: usize,
 }
