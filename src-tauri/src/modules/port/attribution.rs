@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::core::models::{PortAttributionVO, PortClassificationVO};
+use crate::modules::port::model::{PortAttributionVO, PortClassificationVO};
 
 /// 归因引擎使用的进程证据。
 #[derive(Clone, Debug)]
@@ -140,6 +140,16 @@ const SOURCE_RULES: &[SourceRule] = &[
             "bash",
             "fish",
         ],
+    },
+    SourceRule {
+        display: "OrbStack",
+        kind: SourceKind::Ide,
+        needles: &["orbstack"],
+    },
+    SourceRule {
+        display: "Docker",
+        kind: SourceKind::Ide,
+        needles: &["docker", "com.docker"],
     },
     SourceRule {
         display: "WeChat",
@@ -451,6 +461,8 @@ fn detect_runtime(
         Some("Rust".to_string())
     } else if text.contains("go run") || text.ends_with("/go") {
         Some("Go".to_string())
+    } else if text.contains("orbstack") || text.contains("docker") {
+        Some("Container".to_string())
     } else {
         None
     }
@@ -587,7 +599,22 @@ fn hidden(category: &str, reason: &str) -> PortClassificationVO {
 
 /// 判断端口是否属于常见开发端口范围。
 fn is_common_dev_port(port: u16) -> bool {
-    (3000..=9999).contains(&port) || matches!(port, 5173 | 4173 | 8000 | 8080)
+    (3000..=9999).contains(&port)
+        || matches!(
+            port,
+            3306 | 5432
+                | 6379
+                | 27017
+                | 9200
+                | 9300
+                | 5672
+                | 15672
+                | 11211
+                | 5173
+                | 4173
+                | 8000
+                | 8080
+        )
 }
 
 /// 将内部来源类型映射为前端来源类型字符串。

@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use netstat2::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, TcpState};
 use sysinfo::{Pid, ProcessesToUpdate, System};
 
-use crate::core::models::PortSnapshot;
-use crate::core::ports::process::process_name;
+use crate::modules::port::model::PortSnapshot;
+use crate::modules::port::process::process_name;
 
 /// 扫描监听中的 TCP/UDP socket，并映射到所属进程快照。
 pub fn scan_port_snapshots() -> Result<HashMap<String, PortSnapshot>, String> {

@@ -3,8 +3,10 @@ use std::time::Duration;
 
 use sysinfo::{Pid, ProcessesToUpdate, System};
 
-use crate::core::models::{KillProcessQO, PortServiceVO, ProcessSnapshot, ProcessTreeNodeVO};
-use crate::core::ports::attribution::{infer_port_context, ProcessEvidence};
+use crate::modules::port::attribution::{infer_port_context, ProcessEvidence};
+use crate::modules::port::model::{
+    KillProcessQO, PortServiceVO, ProcessSnapshot, ProcessTreeNodeVO,
+};
 
 /// 为监听进程构建从父到子的进程树。
 pub fn get_process_tree(pid: u32) -> Option<ProcessTreeNodeVO> {

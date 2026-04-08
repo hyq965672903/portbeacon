@@ -1,58 +1,10 @@
 use sysinfo::{ProcessesToUpdate, System};
-use tauri::{AppHandle, Emitter};
 
-use crate::core::history::{insert_history_event, query_history};
-use crate::core::models::{
-    HistoryEventPO, HistoryEventVO, HistoryListQO, KillProcessQO, PortListQO, PortListVO,
-    PortServiceVO, ProcessSnapshot, ProcessTreeNodeVO,
-};
-use crate::core::ports::process::{
-    build_service, get_process_tree as build_process_tree, stop_process,
-};
-use crate::core::ports::scanner::scan_port_snapshots;
-
-/// 查询历史记录并返回给前端展示。
-#[tauri::command]
-pub fn list_history(request: HistoryListQO) -> Result<Vec<HistoryEventVO>, String> {
-    query_history(request)
-}
-
-/// 手动停止目标进程，并写入历史记录。
-#[tauri::command]
-pub fn kill_process(app: AppHandle, request: KillProcessQO) -> Result<(), String> {
-    let event = match stop_process(&request) {
-        Ok(snapshot) => HistoryEventPO::manual_stop(&request, &snapshot, "success", None),
-        Err(error) => HistoryEventPO::manual_stop(
-            &request,
-            &ProcessSnapshot::fallback(request.pid),
-            "failed",
-            Some(error.clone()),
-        ),
-    };
-
-    let result = if event.result == "success" {
-        Ok(())
-    } else {
-        Err(event
-            .error
-            .clone()
-            .unwrap_or_else(|| "failed to stop process".to_string()))
-    };
-
-    insert_history_event(&event)?;
-    let _ = app.emit("history-updated", ());
-
-    result
-}
-
-/// 查询目标 PID 的进程链详情。
-#[tauri::command]
-pub fn get_process_tree(pid: u32) -> Result<Option<ProcessTreeNodeVO>, String> {
-    Ok(build_process_tree(pid))
-}
+use crate::modules::port::model::{PortListQO, PortListVO, PortServiceVO};
+use crate::modules::port::process::build_service;
+use crate::modules::port::scanner::scan_port_snapshots;
 
 /// 查询端口列表，并按搜索、范围和关注端口进行过滤分页。
-#[tauri::command]
 pub fn list_ports(request: PortListQO) -> Result<PortListVO, String> {
     let request = NormalizedPortListQO::from(request);
     let snapshots = scan_port_snapshots()?;

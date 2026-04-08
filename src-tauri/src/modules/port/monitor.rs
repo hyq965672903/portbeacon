@@ -5,9 +5,10 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Emitter};
 
-use crate::core::history::insert_history_event;
-use crate::core::models::{HistoryEventPO, PortSnapshot};
-use crate::core::ports::scanner::scan_port_snapshots;
+use crate::modules::history::model::HistoryEventPO;
+use crate::modules::history::service::insert_history_event;
+use crate::modules::port::model::PortSnapshot;
+use crate::modules::port::scanner::scan_port_snapshots;
 
 const MONITOR_INTERVAL: Duration = Duration::from_secs(2);
 static MONITOR_STARTED: AtomicBool = AtomicBool::new(false);

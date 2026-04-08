@@ -5,8 +5,8 @@ use std::sync::OnceLock;
 use rusqlite::{params, Connection};
 use tauri::{AppHandle, Manager};
 
-use crate::core::models::{HistoryEventPO, HistoryEventVO, HistoryListQO};
-use crate::core::time::timestamp_ms;
+use crate::modules::history::model::{HistoryEventPO, HistoryListQO};
+use crate::utils::time::timestamp_ms;
 
 const HISTORY_LIMIT: usize = 600;
 static HISTORY_DB_PATH: OnceLock<PathBuf> = OnceLock::new();
@@ -68,8 +68,8 @@ pub fn insert_history_event(event: &HistoryEventPO) -> Result<(), String> {
     prune_history_events(&connection)
 }
 
-/// 根据前端过滤条件查询历史记录，并返回 VO 结构数据。
-pub fn query_history(request: HistoryListQO) -> Result<Vec<HistoryEventVO>, String> {
+/// 根据前端过滤条件查询历史记录，并返回 PO 结构数据。
+pub fn query_history(request: HistoryListQO) -> Result<Vec<HistoryEventPO>, String> {
     let connection = history_connection()?;
     let limit = request.limit.unwrap_or(200).clamp(1, HISTORY_LIMIT) as i64;
     let now = timestamp_ms();
@@ -126,7 +126,7 @@ pub fn query_history(request: HistoryListQO) -> Result<Vec<HistoryEventVO>, Stri
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| format!("failed to read history events: {error}"))?;
 
-    Ok(events.into_iter().map(HistoryEventVO::from).collect())
+    Ok(events)
 }
 
 /// 打开已初始化历史库的新 SQLite 连接。
