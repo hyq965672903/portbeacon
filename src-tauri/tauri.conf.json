@@ -32,6 +32,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/hyq965672903/portbeacon/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBMTU4QkVEMkQ5NDJDQjUKUldTMUxKUXQ3WXNWV2cwTFJKeCtDRGs0ejZ3blNITGFtcU1KZWVLQVhMcjlGQzFFRkRGNXc4cmIK"
+    }
   }
 }

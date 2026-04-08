@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -20,23 +20,19 @@ jobs:
           - name: macOS Apple Silicon
             os: macos-14
             rust-target: aarch64-apple-darwin
-            bundle-args: --bundles dmg
-            app-zip-name: ""
+            args: --target aarch64-apple-darwin --bundles dmg
           - name: macOS Intel
             os: macos-15-intel
             rust-target: x86_64-apple-darwin
-            bundle-args: --bundles app
-            app-zip-name: portbeacon_0.1.0_x64.app.zip
+            args: --target x86_64-apple-darwin --bundles app
           - name: Windows x64
             os: windows-latest
             rust-target: x86_64-pc-windows-msvc
-            bundle-args: ""
-            app-zip-name: ""
+            args: --target x86_64-pc-windows-msvc
           - name: Linux x64
             os: ubuntu-22.04
             rust-target: x86_64-unknown-linux-gnu
-            bundle-args: ""
-            app-zip-name: ""
+            args: --target x86_64-unknown-linux-gnu
 
     steps:
       - name: Checkout
@@ -72,73 +68,29 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Tauri bundle
-        run: pnpm tauri build --target ${{ matrix.rust-target }} --ci ${{ matrix.bundle-args }}
-
-      - name: Create macOS app zip
-        if: matrix.app-zip-name != ''
+      - name: Read release body
+        id: release_body
+        shell: bash
         run: |
-          cd "src-tauri/target/${{ matrix.rust-target }}/release/bundle/macos"
-          ditto -c -k --sequesterRsrc --keepParent portbeacon.app "${{ matrix.app-zip-name }}"
+          {
+            echo 'body<<EOF'
+            cat .github/release-body.md
+            echo
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Upload bundles
-        uses: actions/upload-artifact@v4
-        with:
-          name: portbeacon-${{ matrix.rust-target }}
-          path: |
-            src-tauri/target/${{ matrix.rust-target }}/release/bundle/**/*
-            src-tauri/target/release/bundle/**/*
-          if-no-files-found: error
-
-  release:
-    name: Publish GitHub Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download bundles
-        uses: actions/download-artifact@v4
-        with:
-          path: release-artifacts
-
-      - name: Create release notes
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          cp .github/release-body.md release-notes.md
-          printf "\n\n## 自动生成的变更记录\n\n" >> release-notes.md
-          gh api "repos/${REPOSITORY}/releases/generate-notes" \
-            -f tag_name="${TAG_NAME}" \
-            --jq ".body" >> release-notes.md
-
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
-        run: |
-          mapfile -d '' assets < <(
-            find release-artifacts -type f \( \
-              -name "*.dmg" -o \
-              -name "*.zip" -o \
-              -name "*.msi" -o \
-              -name "*.exe" -o \
-              -name "*.deb" -o \
-              -name "*.AppImage" -o \
-              -name "*.rpm" \
-            \) -print0
-          )
-
-          if [ "${#assets[@]}" -eq 0 ]; then
-            echo "No release assets found."
-            exit 1
-          fi
-
-          gh release create "${TAG_NAME}" "${assets[@]}" \
-            --title "PortBeacon ${TAG_NAME}" \
-            --notes-file release-notes.md \
-            --verify-tag
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: PortBeacon ${{ github.ref_name }}
+          releaseBody: ${{ steps.release_body.outputs.body }}
+          generateReleaseNotes: true
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true

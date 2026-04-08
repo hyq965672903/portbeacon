@@ -1,4 +1,5 @@
-import { Activity, Plus, ShieldCheck, Trash2, Wifi } from "lucide-react";
+import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
+import { Activity, Download, Plus, RefreshCw, ShieldCheck, Trash2, Wifi } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -86,6 +87,11 @@ export function SettingsView({
   const [rulePort, setRulePort] = useState("");
   const [ruleName, setRuleName] = useState("");
   const [ruleVisibility, setRuleVisibility] = useState<"focused" | "collapsed">("focused");
+  const [availableUpdate, setAvailableUpdate] = useState<Update | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "none" | "installing" | "ready" | "error">("idle");
+  const [updateMessage, setUpdateMessage] = useState("");
+  const [updateDownloadedBytes, setUpdateDownloadedBytes] = useState(0);
+  const [updateTotalBytes, setUpdateTotalBytes] = useState<number | null>(null);
 
   function createPortRule() {
     const port = Number(rulePort);
@@ -108,6 +114,64 @@ export function SettingsView({
     onPortRuleChange(rule);
     setRulePort("");
     setRuleName("");
+  }
+
+  async function handleCheckUpdate() {
+    setAvailableUpdate(null);
+    setUpdateDownloadedBytes(0);
+    setUpdateTotalBytes(null);
+    setUpdateMessage("");
+    setUpdateStatus("checking");
+
+    try {
+      const update = await check({ timeout: 10000 });
+      if (!update) {
+        setUpdateStatus("none");
+        setUpdateMessage(copy.settings.updateNone);
+        return;
+      }
+
+      setAvailableUpdate(update);
+      setUpdateStatus("available");
+      setUpdateMessage(update.body?.trim() || copy.settings.updateAvailableDesc);
+    } catch (error) {
+      setUpdateStatus("error");
+      setUpdateMessage(formatUpdaterError(copy, error));
+    }
+  }
+
+  async function handleInstallUpdate() {
+    if (!availableUpdate || updateStatus === "installing") {
+      return;
+    }
+
+    setUpdateStatus("installing");
+    setUpdateDownloadedBytes(0);
+    setUpdateTotalBytes(null);
+    setUpdateMessage(copy.settings.updateInstallingDesc);
+
+    try {
+      await availableUpdate.downloadAndInstall((event: DownloadEvent) => {
+        if (event.event === "Started") {
+          setUpdateDownloadedBytes(0);
+          setUpdateTotalBytes(event.data.contentLength ?? null);
+        }
+
+        if (event.event === "Progress") {
+          setUpdateDownloadedBytes((value) => value + event.data.chunkLength);
+        }
+
+        if (event.event === "Finished") {
+          setUpdateMessage(copy.settings.updateReadyDesc);
+        }
+      });
+
+      setUpdateStatus("ready");
+      setUpdateMessage(copy.settings.updateReadyDesc);
+    } catch (error) {
+      setUpdateStatus("error");
+      setUpdateMessage(formatUpdaterError(copy, error));
+    }
   }
 
   return (
@@ -234,6 +298,78 @@ export function SettingsView({
 
         <Card>
           <CardContent className="space-y-3 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-[var(--muted-foreground)]">{copy.settings.updateManagerDesc}</p>
+                <h3 className="text-base font-semibold">{copy.settings.updateManager}</h3>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={updateStatus === "checking" || updateStatus === "installing"}
+                onClick={handleCheckUpdate}
+              >
+                <RefreshCw className={cn("size-3.5", updateStatus === "checking" && "animate-spin")} />
+                {copy.settings.checkUpdate}
+              </Button>
+            </div>
+
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/58 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">
+                    {availableUpdate
+                      ? `${copy.settings.updateAvailable}: v${availableUpdate.version}`
+                      : copy.settings.updateIdle}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    {availableUpdate?.date
+                      ? `${copy.settings.updateDate}: ${formatUpdateDate(availableUpdate.date)}`
+                      : copy.settings.updateManualOnly}
+                  </p>
+                </div>
+
+                {availableUpdate && (
+                  <Button
+                    size="sm"
+                    disabled={updateStatus === "installing" || updateStatus === "ready"}
+                    onClick={handleInstallUpdate}
+                  >
+                    <Download className="size-3.5" />
+                    {copy.settings.installUpdate}
+                  </Button>
+                )}
+              </div>
+
+              {(updateMessage || updateStatus === "checking" || updateStatus === "installing") && (
+                <div
+                  className={cn(
+                    "mt-3 rounded-lg border px-3 py-2 text-xs leading-5",
+                    updateStatus === "error"
+                      ? "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"
+                      : "border-[var(--border)] bg-[var(--card)]/72 text-[var(--muted-foreground)]",
+                  )}
+                >
+                  {updateStatus === "checking" && copy.settings.updateChecking}
+                  {updateStatus === "installing" && (
+                    <>
+                      {copy.settings.updateInstalling}
+                      {updateTotalBytes
+                        ? ` · ${formatBytes(updateDownloadedBytes)} / ${formatBytes(updateTotalBytes)}`
+                        : updateDownloadedBytes > 0
+                          ? ` · ${formatBytes(updateDownloadedBytes)}`
+                          : ""}
+                    </>
+                  )}
+                  {updateStatus !== "checking" && updateStatus !== "installing" && updateMessage}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-3 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs text-[var(--muted-foreground)]">{copy.settings.ruleManagerDesc}</p>
@@ -328,4 +464,34 @@ function describeRule(rule: UserFeedbackRuleVO) {
   ].filter(Boolean);
 
   return parts.join(" · ") || rule.category;
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatUpdateDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString();
+}
+
+function formatUpdaterError(copy: AppCopy, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("valid release JSON")) {
+    return copy.settings.updateChannelNotReady;
+  }
+
+  return message;
 }
