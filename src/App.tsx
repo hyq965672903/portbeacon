@@ -13,7 +13,7 @@ import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { listHistory } from "@/lib/history";
 import { Locale, messages, ThemeMode } from "@/lib/i18n";
 import { killProcess, listPorts } from "@/lib/ports";
-import type { HistoryAction, HistoryEntry, Service, View } from "@/types/app";
+import type { HistoryAction, HistoryEntry, PortScope, Service, View } from "@/types/app";
 
 function App() {
   const [view, setView] = useState<View>("ports");
@@ -29,6 +29,9 @@ function App() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [portsSearch, setPortsSearch] = useState("");
+  const [portScope, setPortScope] = useState<PortScope>("development");
+  const [pinnedOnly, setPinnedOnly] = useState(false);
+  const [pinnedPorts, setPinnedPorts] = useState<number[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [portsPage, setPortsPage] = useState(1);
   const [portsTotal, setPortsTotal] = useState(0);
@@ -48,6 +51,7 @@ function App() {
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("portbeacon-locale");
     const storedTheme = window.localStorage.getItem("portbeacon-theme-mode");
+    const storedPinnedPorts = window.localStorage.getItem("portbeacon-pinned-ports");
 
     if (storedLocale === "zh" || storedLocale === "en") {
       setLocale(storedLocale);
@@ -55,6 +59,17 @@ function App() {
 
     if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system") {
       setThemeMode(storedTheme);
+    }
+
+    if (storedPinnedPorts) {
+      try {
+        const parsed = JSON.parse(storedPinnedPorts);
+        if (Array.isArray(parsed)) {
+          setPinnedPorts(parsed.filter((port) => Number.isInteger(port) && port > 0 && port <= 65535));
+        }
+      } catch {
+        setPinnedPorts([]);
+      }
     }
   }, []);
 
@@ -80,7 +95,11 @@ function App() {
 
   useEffect(() => {
     setPortsPage(1);
-  }, [portsSearch, portsPageSize]);
+  }, [pinnedOnly, pinnedPorts, portScope, portsSearch, portsPageSize]);
+
+  useEffect(() => {
+    window.localStorage.setItem("portbeacon-pinned-ports", JSON.stringify(pinnedPorts));
+  }, [pinnedPorts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +110,9 @@ function App() {
         page: portsPage,
         pageSize: portsPageSize,
         search: portsSearch,
+        scope: portScope,
+        pinnedOnly,
+        pinnedPorts,
       })
         .then((response) => {
           if (cancelled) return;
@@ -115,7 +137,7 @@ function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [portsPage, portsPageSize, portsRefreshKey, portsSearch]);
+  }, [pinnedOnly, pinnedPorts, portScope, portsPage, portsPageSize, portsRefreshKey, portsSearch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,6 +190,14 @@ function App() {
     setPendingStopService(service);
   }
 
+  function togglePinnedPort(port: number) {
+    setPinnedPorts((current) =>
+      current.includes(port)
+        ? current.filter((pinnedPort) => pinnedPort !== port)
+        : [...current, port].sort((left, right) => left - right),
+    );
+  }
+
   async function confirmStopService() {
     if (!pendingStopService || stoppingPid !== null || pendingStopService.pid === 0) {
       return;
@@ -218,6 +248,7 @@ function App() {
             {view === "ports" && (
               <PortsView
                 copy={copy}
+                locale={locale}
                 services={services}
                 total={portsTotal}
                 page={portsPage}
@@ -225,9 +256,15 @@ function App() {
                 loading={portsLoading}
                 error={portsError}
                 search={portsSearch}
+                scope={portScope}
+                pinnedOnly={pinnedOnly}
+                pinnedPorts={pinnedPorts}
                 stoppingPid={stoppingPid}
                 onPageChange={setPortsPage}
+                onPinnedOnlyChange={setPinnedOnly}
+                onPinnedPortToggle={togglePinnedPort}
                 onSearchChange={setPortsSearch}
+                onScopeChange={setPortScope}
                 onStopService={handleStopService}
                 onRefresh={() => setPortsRefreshKey((value) => value + 1)}
               />

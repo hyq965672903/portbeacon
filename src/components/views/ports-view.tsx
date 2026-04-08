@@ -1,16 +1,18 @@
-import { Cpu, Folder, GitBranch, Hash, RefreshCw, Search, X } from "lucide-react";
+import { Cpu, Folder, GitBranch, Hash, RefreshCw, Search, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { Locale } from "@/lib/i18n";
 import { getProcessTree } from "@/lib/ports";
 import { cn } from "@/lib/utils";
-import type { AppCopy, ProcessTreeNode, Service } from "@/types/app";
+import type { AppCopy, PortScope, ProcessTreeNode, Service } from "@/types/app";
 
 type PortsViewProps = {
   copy: AppCopy;
+  locale: Locale;
   services: Service[];
   total: number;
   page: number;
@@ -18,12 +20,34 @@ type PortsViewProps = {
   loading: boolean;
   error: string | null;
   search: string;
+  scope: PortScope;
+  pinnedOnly: boolean;
+  pinnedPorts: number[];
   stoppingPid: number | null;
   onPageChange: (value: number) => void;
   onSearchChange: (value: string) => void;
+  onScopeChange: (value: PortScope) => void;
+  onPinnedOnlyChange: (value: boolean) => void;
+  onPinnedPortToggle: (port: number) => void;
   onStopService: (service: Service) => void;
   onRefresh: () => void;
 };
+
+const scopeOptions: PortScope[] = ["development", "all"];
+
+function scopeLabel(copy: AppCopy, scope: PortScope) {
+  return scope === "development" ? copy.ports.developmentPorts : copy.ports.allPorts;
+}
+
+function compactSource(copy: AppCopy, service: Service) {
+  const parts = [
+    service.attribution.sourceApp,
+    service.attribution.launcher,
+    service.attribution.project,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" · ") : copy.ports.sourceUnknown;
+}
 
 function ProcessTree({ node, depth = 0 }: { node: ProcessTreeNode; depth?: number }) {
   return (
@@ -118,7 +142,9 @@ type PortTableContentProps = {
   onStopService: (service: Service) => void;
   selectedServiceId: string | undefined;
   services: Service[];
+  pinnedPorts: number[];
   stoppingPid: number | null;
+  onPinnedPortToggle: (port: number) => void;
 };
 
 function PortTableContent({
@@ -129,7 +155,9 @@ function PortTableContent({
   onStopService,
   selectedServiceId,
   services,
+  pinnedPorts,
   stoppingPid,
+  onPinnedPortToggle,
 }: PortTableContentProps) {
   if (loading) {
     return (
@@ -156,16 +184,16 @@ function PortTableContent({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar">
-      <Table className="table-fixed w-full">
+    <div className="min-h-0 flex-1 overflow-auto custom-scrollbar">
+      <Table className="min-w-[960px] table-fixed">
         <TableHeader className="sticky top-0 z-10 bg-[var(--card)] backdrop-blur">
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[68px]">{copy.table.port}</TableHead>
-            <TableHead className="w-[76px]">{copy.table.pid}</TableHead>
-            <TableHead>{copy.table.service}</TableHead>
-            <TableHead className="w-[82px]">{copy.table.uptime}</TableHead>
-            <TableHead className="w-[92px]">{copy.table.resources}</TableHead>
-            <TableHead className="w-[76px] text-right">{copy.table.action}</TableHead>
+            <TableHead className="w-[132px]">{copy.table.port}</TableHead>
+            <TableHead className="w-[220px]">{copy.table.service}</TableHead>
+            <TableHead className="w-[260px]">{copy.table.source}</TableHead>
+            <TableHead className="w-[112px]">{copy.table.uptime}</TableHead>
+            <TableHead className="w-[136px]">{copy.table.resources}</TableHead>
+            <TableHead className="w-[100px] text-right">{copy.table.action}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -180,17 +208,37 @@ function PortTableContent({
               onClick={() => onSelectService(service)}
             >
               <TableCell className="font-mono text-[var(--primary)] transition-colors group-hover:text-[var(--foreground)]">
-                {service.port}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "size-7 text-[var(--muted-foreground)]",
+                      pinnedPorts.includes(service.port) && "text-[var(--primary)]",
+                    )}
+                    aria-label={pinnedPorts.includes(service.port) ? copy.ports.unfavoritePort : copy.ports.favoritePort}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onPinnedPortToggle(service.port);
+                    }}
+                  >
+                    <Star className={cn("size-3.5", pinnedPorts.includes(service.port) && "fill-current")} />
+                  </Button>
+                  <span className="tabular-nums">{service.port}</span>
+                </div>
               </TableCell>
-              <TableCell className="font-mono text-[var(--muted-foreground)]">{service.pid}</TableCell>
               <TableCell>
                 <div className="flex min-w-0 items-center gap-2">
                   <div className="size-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{service.name}</p>
-                    <p className="truncate text-[11px] text-[var(--muted-foreground)]">{service.location}</p>
+                    <p className="truncate font-medium">{service.attribution.displayName}</p>
                   </div>
                 </div>
+              </TableCell>
+              <TableCell>
+                <p className="truncate text-[12px] text-[var(--muted-foreground)]">
+                  {compactSource(copy, service)}
+                </p>
               </TableCell>
               <TableCell>
                 <div className="text-[12px] leading-4">
@@ -228,6 +276,7 @@ function PortTableContent({
 
 export function PortsView({
   copy,
+  locale,
   services,
   total,
   page,
@@ -235,9 +284,15 @@ export function PortsView({
   loading,
   error,
   search,
+  scope,
+  pinnedOnly,
+  pinnedPorts,
   stoppingPid,
   onPageChange,
   onSearchChange,
+  onScopeChange,
+  onPinnedOnlyChange,
+  onPinnedPortToggle,
   onStopService,
   onRefresh,
 }: PortsViewProps) {
@@ -292,7 +347,31 @@ export function PortsView({
   return (
     <div className="relative flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       <Card className="shrink-0">
-        <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2">
+        <CardContent className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 p-2">
+          <div className="flex min-w-0 gap-1 rounded-lg border border-[var(--border)] bg-[var(--secondary)] p-1">
+            {scopeOptions.map((item) => (
+              <Button
+                key={item}
+                variant={scope === item ? "default" : "ghost"}
+                size="sm"
+                className="h-7 px-2.5 text-xs"
+                onClick={() => onScopeChange(item)}
+              >
+                {scopeLabel(copy, item)}
+              </Button>
+            ))}
+          </div>
+
+          <Button
+            variant={pinnedOnly ? "default" : "secondary"}
+            size="sm"
+            className="h-8 gap-1.5 px-3"
+            onClick={() => onPinnedOnlyChange(!pinnedOnly)}
+          >
+            <Star className={cn("size-3.5", pinnedOnly && "fill-current")} />
+            {copy.ports.favoriteOnly}
+          </Button>
+
           <div className="relative min-w-0">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
             <Input
@@ -326,7 +405,9 @@ export function PortsView({
             onStopService={onStopService}
             selectedServiceId={selectedServiceId}
             services={services}
+            pinnedPorts={pinnedPorts}
             stoppingPid={stoppingPid}
+            onPinnedPortToggle={onPinnedPortToggle}
           />
 
           <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-t border-[var(--border)] bg-[var(--card)]/95 px-2.5 text-xs text-[var(--muted-foreground)] backdrop-blur">
@@ -377,7 +458,7 @@ export function PortsView({
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
                     {copy.ports.details}
                   </p>
-                  <h2 className="mt-1 truncate text-lg font-semibold">{selectedService.name}</h2>
+                  <h2 className="mt-1 truncate text-lg font-semibold">{selectedService.attribution.displayName}</h2>
                 </div>
                 <Button
                   variant="ghost"
@@ -397,6 +478,31 @@ export function PortsView({
             </div>
 
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 custom-scrollbar">
+              <section className="rounded-lg border border-[var(--border)] bg-[var(--card)]/72 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                  <GitBranch className="size-4 text-[var(--primary)]" />
+                  {copy.ports.attribution}
+                </div>
+                <p className="text-xs leading-5 text-[var(--muted-foreground)]">
+                  {locale === "zh" ? selectedService.attribution.summary : selectedService.attribution.summaryEn}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-lg bg-[var(--secondary)] p-2">
+                    <p className="text-[var(--muted-foreground)]">{copy.table.source}</p>
+                    <p className="mt-1 truncate font-semibold">{compactSource(copy, selectedService)}</p>
+                  </div>
+                  <div className="rounded-lg bg-[var(--secondary)] p-2">
+                    <p className="text-[var(--muted-foreground)]">{copy.ports.confidence}</p>
+                    <p className="mt-1 font-semibold">{selectedService.attribution.confidence}</p>
+                  </div>
+                </div>
+                {selectedService.classification.hiddenReason && (
+                  <p className="mt-3 rounded-lg bg-[var(--secondary)] p-2 text-xs text-[var(--muted-foreground)]">
+                    {copy.ports.hiddenItem}: {selectedService.classification.hiddenReason}
+                  </p>
+                )}
+              </section>
+
               <section className="rounded-lg border border-[var(--border)] bg-[var(--card)]/72 p-3">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
                   <GitBranch className="size-4 text-[var(--primary)]" />

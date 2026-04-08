@@ -66,7 +66,7 @@ pub fn list_ports(request: PortListRequest) -> Result<PortListResponse, String> 
             snapshot.pid,
         );
 
-        if !request.matches_search(&service) {
+        if !request.matches_scope(&service) || !request.matches_search(&service) {
             continue;
         }
 
@@ -95,6 +95,9 @@ struct NormalizedPortListRequest {
     page: usize,
     page_size: usize,
     search: String,
+    scope: String,
+    pinned_only: bool,
+    pinned_ports: Vec<u16>,
 }
 
 impl From<PortListRequest> for NormalizedPortListRequest {
@@ -103,19 +106,49 @@ impl From<PortListRequest> for NormalizedPortListRequest {
             page: request.page.max(1),
             page_size: request.page_size.clamp(1, 100),
             search: request.search.unwrap_or_default().trim().to_lowercase(),
+            scope: request.scope.unwrap_or_else(|| "development".to_string()),
+            pinned_only: request.pinned_only.unwrap_or(false),
+            pinned_ports: request.pinned_ports.unwrap_or_default(),
         }
     }
 }
 
 impl NormalizedPortListRequest {
     fn matches_search(&self, service: &PortService) -> bool {
-        self.search.is_empty()
-            || format!(
-                "{} {} {} {}",
-                service.port, service.pid, service.name, service.location
-            )
-            .to_lowercase()
-            .contains(&self.search)
+        self.search.is_empty() || self.searchable_text(service).contains(&self.search)
+    }
+
+    fn matches_scope(&self, service: &PortService) -> bool {
+        if self.pinned_only && !self.pinned_ports.contains(&service.port) {
+            return false;
+        }
+
+        if self.scope == "all" {
+            return true;
+        }
+
+        service.classification.visibility == "focused"
+    }
+
+    fn searchable_text(&self, service: &PortService) -> String {
+        format!(
+            "{} {} {} {} {} {} {} {} {} {}",
+            service.port,
+            service.pid,
+            service.name,
+            service.location,
+            service.attribution.display_name,
+            service
+                .attribution
+                .source_app
+                .as_deref()
+                .unwrap_or_default(),
+            service.attribution.launcher.as_deref().unwrap_or_default(),
+            service.attribution.framework.as_deref().unwrap_or_default(),
+            service.attribution.project.as_deref().unwrap_or_default(),
+            service.classification.category
+        )
+        .to_lowercase()
     }
 }
 
@@ -129,6 +162,9 @@ mod tests {
             page: 0,
             page_size: 500,
             search: Some("  Node  ".to_string()),
+            scope: None,
+            pinned_only: None,
+            pinned_ports: None,
         });
 
         assert_eq!(request.page, 1);

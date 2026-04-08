@@ -6,6 +6,9 @@ pub struct PortListRequest {
     pub page: usize,
     pub page_size: usize,
     pub search: Option<String>,
+    pub scope: Option<String>,
+    pub pinned_only: Option<bool>,
+    pub pinned_ports: Option<Vec<u16>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -67,6 +70,33 @@ pub struct PortService {
     pub cpu: String,
     pub memory: String,
     pub updated_at: String,
+    pub attribution: PortAttribution,
+    pub classification: PortClassification,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortAttribution {
+    pub display_name: String,
+    pub summary: String,
+    pub summary_en: String,
+    pub source_app: Option<String>,
+    pub source_type: String,
+    pub launcher: Option<String>,
+    pub runtime: Option<String>,
+    pub framework: Option<String>,
+    pub project: Option<String>,
+    pub confidence: String,
+    pub evidence: Vec<String>,
+    pub chain: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortClassification {
+    pub category: String,
+    pub visibility: String,
+    pub hidden_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -77,6 +107,7 @@ pub struct ProcessTreeNode {
     name: String,
     command: Option<String>,
     executable: Option<String>,
+    cwd: Option<String>,
     children: Vec<ProcessTreeNode>,
 }
 
@@ -87,6 +118,7 @@ impl ProcessTreeNode {
         name: String,
         command: Option<String>,
         executable: Option<String>,
+        cwd: Option<String>,
     ) -> Self {
         Self {
             pid,
@@ -94,6 +126,7 @@ impl ProcessTreeNode {
             name,
             command,
             executable,
+            cwd,
             children: Vec::new(),
         }
     }

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import type { ProcessTreeNode, Service } from "@/types/app";
+import type { PortScope } from "@/types/app";
 
 export type PortListResponse = {
   items: Service[];
@@ -13,6 +14,9 @@ export type PortListRequest = {
   page: number;
   pageSize: number;
   search: string;
+  scope: PortScope;
+  pinnedOnly: boolean;
+  pinnedPorts: number[];
 };
 
 export type KillProcessRequest = {

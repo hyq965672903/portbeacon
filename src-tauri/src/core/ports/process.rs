@@ -4,6 +4,7 @@ use std::time::Duration;
 use sysinfo::{Pid, ProcessesToUpdate, System};
 
 use crate::core::models::{KillProcessRequest, PortService, ProcessSnapshot, ProcessTreeNode};
+use crate::core::ports::attribution::{infer_port_context, ProcessEvidence};
 
 pub fn get_process_tree(pid: u32) -> Option<ProcessTreeNode> {
     if pid == 0 {
@@ -84,6 +85,9 @@ pub fn build_service(
     let memory = process
         .map(|process| format_memory(process.memory()))
         .unwrap_or_else(|| "-".to_string());
+    let chain = collect_process_chain(system, pid);
+    let evidence = chain.iter().map(ProcessEvidence::from).collect::<Vec<_>>();
+    let (attribution, classification) = infer_port_context(port, &name, &location, &evidence);
 
     PortService {
         id,
@@ -97,13 +101,36 @@ pub fn build_service(
         cpu,
         memory,
         updated_at: "now".to_string(),
+        attribution,
+        classification,
     }
 }
 
 fn build_process_tree(system: &System, pid: u32) -> Option<ProcessTreeNode> {
-    let mut chain = Vec::new();
+    let chain = collect_process_chain(system, pid);
+
+    chain.into_iter().fold(None, |child, item| {
+        let mut parent = ProcessTreeNode::new(
+            item.pid,
+            item.parent_pid,
+            item.name,
+            item.command,
+            item.executable,
+            item.cwd,
+        );
+
+        if let Some(child) = child {
+            parent.push_child(child);
+        }
+
+        Some(parent)
+    })
+}
+
+pub fn collect_process_chain(system: &System, pid: u32) -> Vec<ProcessChainItem> {
     let mut current_pid = Pid::from_u32(pid);
     let mut seen = HashSet::new();
+    let mut chain = Vec::new();
 
     loop {
         if !seen.insert(current_pid.as_u32()) {
@@ -115,13 +142,14 @@ fn build_process_tree(system: &System, pid: u32) -> Option<ProcessTreeNode> {
         };
 
         let parent_pid = process.parent();
-        chain.push(ProcessTreeNode::new(
-            process.pid().as_u32(),
-            parent_pid.map(|pid| pid.as_u32()),
-            process_name(process),
-            process_command(process),
-            process.exe().map(|path| path.display().to_string()),
-        ));
+        chain.push(ProcessChainItem {
+            pid: process.pid().as_u32(),
+            parent_pid: parent_pid.map(|pid| pid.as_u32()),
+            name: process_name(process),
+            command: process_command(process),
+            executable: process.exe().map(|path| path.display().to_string()),
+            cwd: process.cwd().map(|path| path.display().to_string()),
+        });
 
         let Some(next_pid) = parent_pid else {
             break;
@@ -130,12 +158,29 @@ fn build_process_tree(system: &System, pid: u32) -> Option<ProcessTreeNode> {
         current_pid = next_pid;
     }
 
-    chain.into_iter().rev().fold(None, |child, mut parent| {
-        if let Some(child) = child {
-            parent.push_child(child);
+    chain.reverse();
+    chain
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcessChainItem {
+    pub pid: u32,
+    pub parent_pid: Option<u32>,
+    pub name: String,
+    pub command: Option<String>,
+    pub executable: Option<String>,
+    pub cwd: Option<String>,
+}
+
+impl From<&ProcessChainItem> for ProcessEvidence {
+    fn from(item: &ProcessChainItem) -> Self {
+        Self {
+            name: item.name.clone(),
+            command: item.command.clone(),
+            executable: item.executable.clone(),
+            cwd: item.cwd.clone(),
         }
-        Some(parent)
-    })
+    }
 }
 
 pub fn process_name(process: &sysinfo::Process) -> String {
