@@ -22,9 +22,11 @@ PortBeacon is a desktop port monitor for developers. It helps you inspect local 
 Download the latest version from GitHub Releases.
 
 - macOS Apple Silicon: download the `aarch64` `.dmg`.
-- macOS Intel: download the `x64` `.app.zip`.
-- Windows: download the `.msi` or `.exe` installer.
-- Linux: download the `.AppImage`, `.deb`, or `.rpm` package.
+- macOS Intel: download the `x64` / `x86_64` `.dmg`.
+- Windows: prefer the `.exe` installer.
+- Linux: prefer the `.AppImage`, or choose the `.deb` / `.rpm` package for your distribution.
+
+Auto-update also uses artifacts such as `.app.tar.gz`, `.sig`, and `latest.json`. These files are not intended for manual installation.
 
 ## Local Development
 
@@ -65,6 +67,7 @@ pnpm tauri build
 ## Docs
 
 - [CI/CD Guide](./docs/cicd.md)
+- [Updater and Release Guide](./docs/自动更新与发布方案.md)
 - [Release Body Template](./.github/release-body.md)
 
 ## Safety Note
