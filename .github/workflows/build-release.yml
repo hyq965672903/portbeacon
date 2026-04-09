@@ -24,15 +24,15 @@ jobs:
           - name: macOS Intel
             os: macos-15-intel
             rust-target: x86_64-apple-darwin
-            args: --target x86_64-apple-darwin --bundles app
+            args: --target x86_64-apple-darwin --bundles app,dmg
           - name: Windows x64
             os: windows-latest
             rust-target: x86_64-pc-windows-msvc
-            args: --target x86_64-pc-windows-msvc
+            args: --target x86_64-pc-windows-msvc --bundles nsis
           - name: Linux x64
             os: ubuntu-22.04
             rust-target: x86_64-unknown-linux-gnu
-            args: --target x86_64-unknown-linux-gnu
+            args: --target x86_64-unknown-linux-gnu --bundles appimage,deb,rpm
 
     steps:
       - name: Checkout
@@ -63,7 +63,11 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            pkg-config \
+            libssl-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -71,10 +75,16 @@ jobs:
       - name: Read release body
         id: release_body
         shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
+          VERSION="${TAG_NAME#v}"
           {
             echo 'body<<EOF'
-            cat .github/release-body.md
+            sed \
+              -e "s|__TAG_NAME__|${TAG_NAME}|g" \
+              -e "s|__VERSION__|${VERSION}|g" \
+              .github/release-body.md
             echo
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
@@ -84,6 +94,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          APPIMAGETOOL_COMP: ${{ runner.os == 'Linux' && 'gzip' || '' }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: PortBeacon ${{ github.ref_name }}

@@ -7,16 +7,21 @@
 
 ## 下载说明
 
-- macOS M 芯片：下载 `aarch64` 或 `universal` 的 `.dmg`。
-- macOS Intel 芯片：优先下载 `x64` / `x86_64` 对应的 macOS 安装包。
-- Windows：下载 `.msi` 或 `.exe`。
-- Linux：下载 `.AppImage`、`.deb` 或 `.rpm`。
+- macOS：
+  - M 芯片：[下载 `.dmg`](https://github.com/hyq965672903/portbeacon/releases/download/__TAG_NAME__/portbeacon___VERSION___aarch64.dmg)
+  - Intel 芯片：[下载 `.dmg`](https://github.com/hyq965672903/portbeacon/releases/download/__TAG_NAME__/portbeacon___VERSION___x64.dmg)
+- Windows：[下载 `.exe`](https://github.com/hyq965672903/portbeacon/releases/download/__TAG_NAME__/portbeacon___VERSION___x64-setup.exe)
+- Linux：
+  - [下载 `.AppImage`](https://github.com/hyq965672903/portbeacon/releases/download/__TAG_NAME__/portbeacon___VERSION___amd64.AppImage)
+  - [下载 `.deb`](https://github.com/hyq965672903/portbeacon/releases/download/__TAG_NAME__/portbeacon___VERSION___amd64.deb)
+  - [下载 `.rpm`](https://github.com/hyq965672903/portbeacon/releases/download/__TAG_NAME__/portbeacon-__VERSION__-1.x86_64.rpm)
 
 ## 安装和兼容性说明
 
 - macOS 首次打开如果出现系统安全提示，请在系统设置的隐私与安全中允许打开。
 - Windows 如果出现 SmartScreen 提示，是因为当前版本还没有代码签名证书；确认来源后可以继续运行。
 - Linux 如果使用 `.AppImage`，可能需要先赋予执行权限。
+- `.app.tar.gz` 和 `.sig` 是自动更新使用的产物，不建议手动下载。
 
 ## 注意
 
