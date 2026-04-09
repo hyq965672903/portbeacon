@@ -1,4 +1,4 @@
-import { Cpu, Folder, GitBranch, Hash, Pause, Play, RefreshCw, Search, Star, X } from "lucide-react";
+import { Folder, GitBranch, Hash, Pause, Play, RefreshCw, Search, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -191,7 +191,7 @@ function PortTableContent({
             <TableHead className="w-[150px] px-2">{copy.table.service}</TableHead>
             <TableHead className="px-2">{copy.table.source}</TableHead>
             <TableHead className="w-[82px] px-2">{copy.table.uptime}</TableHead>
-            <TableHead className="w-[104px] px-2">{copy.table.resources}</TableHead>
+            <TableHead className="w-[104px] px-2">{copy.table.memory}</TableHead>
             <TableHead className="w-[64px] px-2 text-right">{copy.table.action}</TableHead>
           </TableRow>
         </TableHeader>
@@ -245,11 +245,8 @@ function PortTableContent({
                 </div>
               </TableCell>
               <TableCell className="px-2">
-                <div
-                  className="truncate text-[11px] leading-4 text-[var(--muted-foreground)]"
-                  title={`CPU ${service.cpu} / MEM ${service.memory}`}
-                >
-                  {service.cpu} / {service.memory}
+                <div className="truncate font-mono text-[11px] leading-4 text-[var(--muted-foreground)]" title={service.memory}>
+                  {service.memory}
                 </div>
               </TableCell>
               <TableCell className="px-2 text-right">
@@ -547,16 +544,12 @@ export function PortsView({
 
               <section className="rounded-lg border border-[var(--border)] bg-[var(--card)]/72 p-3">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                  <Cpu className="size-4 text-[var(--primary)]" />
+                  <Hash className="size-4 text-[var(--primary)]" />
                   {copy.ports.resourceSnapshot}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-lg bg-[var(--secondary)] p-2">
-                    <p className="text-[var(--muted-foreground)]">CPU</p>
-                    <p className="mt-1 font-mono text-sm">{selectedService.cpu}</p>
-                  </div>
-                  <div className="rounded-lg bg-[var(--secondary)] p-2">
-                    <p className="text-[var(--muted-foreground)]">MEM</p>
+                    <p className="text-[var(--muted-foreground)]">{copy.table.memory}</p>
                     <p className="mt-1 font-mono text-sm">{selectedService.memory}</p>
                   </div>
                   <div className="rounded-lg bg-[var(--secondary)] p-2">

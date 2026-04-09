@@ -1,5 +1,5 @@
 import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
-import { Activity, Download, Plus, RefreshCw, ShieldCheck, Trash2, Wifi } from "lucide-react";
+import { Download, Plus, RefreshCw, ShieldCheck, Trash2, Wifi, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -37,7 +37,7 @@ function StatusPill({
   value,
   accent,
 }: {
-  icon: typeof Activity;
+  icon: typeof ShieldCheck;
   label: string;
   value: string;
   accent: string;
@@ -90,8 +90,10 @@ export function SettingsView({
   const [availableUpdate, setAvailableUpdate] = useState<Update | null>(null);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "none" | "installing" | "ready" | "error">("idle");
   const [updateMessage, setUpdateMessage] = useState("");
+  const [updateReleaseNotes, setUpdateReleaseNotes] = useState("");
   const [updateDownloadedBytes, setUpdateDownloadedBytes] = useState(0);
   const [updateTotalBytes, setUpdateTotalBytes] = useState<number | null>(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
 
   function createPortRule() {
     const port = Number(rulePort);
@@ -121,6 +123,7 @@ export function SettingsView({
     setUpdateDownloadedBytes(0);
     setUpdateTotalBytes(null);
     setUpdateMessage("");
+    setUpdateReleaseNotes("");
     setUpdateStatus("checking");
 
     try {
@@ -128,15 +131,19 @@ export function SettingsView({
       if (!update) {
         setUpdateStatus("none");
         setUpdateMessage(copy.settings.updateNone);
+        setUpdateModalOpen(true);
         return;
       }
 
       setAvailableUpdate(update);
       setUpdateStatus("available");
+      setUpdateReleaseNotes(update.body?.trim() || "");
       setUpdateMessage(update.body?.trim() || copy.settings.updateAvailableDesc);
+      setUpdateModalOpen(true);
     } catch (error) {
       setUpdateStatus("error");
       setUpdateMessage(formatUpdaterError(copy, error));
+      setUpdateModalOpen(true);
     }
   }
 
@@ -168,9 +175,11 @@ export function SettingsView({
 
       setUpdateStatus("ready");
       setUpdateMessage(copy.settings.updateReadyDesc);
+      setUpdateModalOpen(true);
     } catch (error) {
       setUpdateStatus("error");
       setUpdateMessage(formatUpdaterError(copy, error));
+      setUpdateModalOpen(true);
     }
   }
 
@@ -197,16 +206,10 @@ export function SettingsView({
                 accent="text-emerald-300"
               />
               <StatusPill
-                icon={Activity}
-                label={copy.settings.cpu}
-                value="11.2%"
-                accent="text-[var(--primary)]"
-              />
-              <StatusPill
                 icon={Wifi}
                 label={copy.settings.network}
                 value="16"
-                accent="text-sky-300"
+                accent="text-[var(--primary)]"
               />
             </div>
           </CardContent>
@@ -297,12 +300,9 @@ export function SettingsView({
         </div>
 
         <Card>
-          <CardContent className="space-y-3 p-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs text-[var(--muted-foreground)]">{copy.settings.updateManagerDesc}</p>
-                <h3 className="text-base font-semibold">{copy.settings.updateManager}</h3>
-              </div>
+          <CardContent className="p-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-base font-semibold">{copy.settings.updateManager}</h3>
               <Button
                 variant="secondary"
                 size="sm"
@@ -312,58 +312,6 @@ export function SettingsView({
                 <RefreshCw className={cn("size-3.5", updateStatus === "checking" && "animate-spin")} />
                 {copy.settings.checkUpdate}
               </Button>
-            </div>
-
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/58 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">
-                    {availableUpdate
-                      ? `${copy.settings.updateAvailable}: v${availableUpdate.version}`
-                      : copy.settings.updateIdle}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                    {availableUpdate?.date
-                      ? `${copy.settings.updateDate}: ${formatUpdateDate(availableUpdate.date)}`
-                      : copy.settings.updateManualOnly}
-                  </p>
-                </div>
-
-                {availableUpdate && (
-                  <Button
-                    size="sm"
-                    disabled={updateStatus === "installing" || updateStatus === "ready"}
-                    onClick={handleInstallUpdate}
-                  >
-                    <Download className="size-3.5" />
-                    {copy.settings.installUpdate}
-                  </Button>
-                )}
-              </div>
-
-              {(updateMessage || updateStatus === "checking" || updateStatus === "installing") && (
-                <div
-                  className={cn(
-                    "mt-3 rounded-lg border px-3 py-2 text-xs leading-5",
-                    updateStatus === "error"
-                      ? "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"
-                      : "border-[var(--border)] bg-[var(--card)]/72 text-[var(--muted-foreground)]",
-                  )}
-                >
-                  {updateStatus === "checking" && copy.settings.updateChecking}
-                  {updateStatus === "installing" && (
-                    <>
-                      {copy.settings.updateInstalling}
-                      {updateTotalBytes
-                        ? ` · ${formatBytes(updateDownloadedBytes)} / ${formatBytes(updateTotalBytes)}`
-                        : updateDownloadedBytes > 0
-                          ? ` · ${formatBytes(updateDownloadedBytes)}`
-                          : ""}
-                    </>
-                  )}
-                  {updateStatus !== "checking" && updateStatus !== "installing" && updateMessage}
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -451,8 +399,161 @@ export function SettingsView({
           </CardContent>
         </Card>
       </div>
+
+      {updateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <button
+            type="button"
+            aria-label={copy.settings.closeUpdateDialog}
+            className="absolute inset-0 cursor-default"
+            onClick={() => {
+              if (updateStatus !== "checking" && updateStatus !== "installing") {
+                setUpdateModalOpen(false);
+              }
+            }}
+          />
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={copy.settings.updateDialogTitle}
+            className="relative z-10 w-[min(560px,calc(100vw-32px))] overflow-hidden rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,rgba(18,25,31,0.98),rgba(10,14,18,0.98))] shadow-[0_30px_120px_rgba(0,0,0,0.5)]"
+          >
+            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(127,197,255,0.16),rgba(122,255,202,0.10)_55%,transparent)] px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
+                    {copy.settings.updateDialogEyebrow}
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold">{resolveUpdateDialogTitle(copy, updateStatus, availableUpdate)}</h2>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-9"
+                  disabled={updateStatus === "checking" || updateStatus === "installing"}
+                  aria-label={copy.settings.closeUpdateDialog}
+                  onClick={() => setUpdateModalOpen(false)}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-[var(--muted-foreground)]">
+                {resolveUpdateDialogMessage(copy, updateStatus, updateMessage)}
+              </p>
+            </div>
+
+            <div className="space-y-4 px-5 py-5">
+              {availableUpdate && (
+                <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 md:grid-cols-[minmax(0,1fr)_140px]">
+                  <div className="min-w-0">
+                    <p className="text-xs text-[var(--muted-foreground)]">{copy.settings.updateVersionLabel}</p>
+                    <p className="mt-1 text-lg font-semibold">v{availableUpdate.version}</p>
+                    {availableUpdate.date && (
+                      <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                        {copy.settings.updateDate}: {formatUpdateDate(availableUpdate.date)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/10 p-3 text-left md:text-right">
+                    <p className="text-xs text-[var(--muted-foreground)]">{copy.settings.updateChannelLabel}</p>
+                    <p className="mt-1 font-semibold">{copy.settings.manualUpdate}</p>
+                  </div>
+                </div>
+              )}
+
+              {availableUpdate && updateReleaseNotes && (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                    {copy.settings.updateNotes}
+                  </p>
+                  <pre className="mt-3 whitespace-pre-wrap break-words font-sans text-sm leading-6 text-[var(--foreground)]">
+                    {updateReleaseNotes}
+                  </pre>
+                </div>
+              )}
+
+              {updateStatus === "installing" && (
+                <div className="rounded-2xl border border-[var(--border)] bg-white/[0.04] p-4 text-sm text-[var(--muted-foreground)]">
+                  {updateTotalBytes
+                    ? `${formatBytes(updateDownloadedBytes)} / ${formatBytes(updateTotalBytes)}`
+                    : updateDownloadedBytes > 0
+                      ? formatBytes(updateDownloadedBytes)
+                      : copy.settings.updateInstallingDesc}
+                </div>
+              )}
+
+              {updateStatus === "error" && (
+                <div className="rounded-2xl border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-4 text-sm leading-6 text-[var(--destructive)]">
+                  {updateMessage}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-white/10 px-5 py-4">
+              <Button
+                variant="secondary"
+                className="h-10 px-4"
+                disabled={updateStatus === "checking" || updateStatus === "installing"}
+                onClick={() => setUpdateModalOpen(false)}
+              >
+                {copy.settings.closeUpdateDialog}
+              </Button>
+              {availableUpdate && (
+                <Button
+                  className="h-10 px-4"
+                  disabled={updateStatus === "installing" || updateStatus === "ready"}
+                  onClick={handleInstallUpdate}
+                >
+                  <Download className="size-4" />
+                  {updateStatus === "ready" ? copy.settings.updateInstalled : copy.settings.installUpdate}
+                </Button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
+}
+
+function resolveUpdateDialogTitle(
+  copy: AppCopy,
+  status: "idle" | "checking" | "available" | "none" | "installing" | "ready" | "error",
+  availableUpdate: Update | null,
+) {
+  if (status === "none") {
+    return copy.settings.updateLatestTitle;
+  }
+
+  if (status === "error") {
+    return copy.settings.updateFailedTitle;
+  }
+
+  if (status === "ready") {
+    return copy.settings.updateInstalled;
+  }
+
+  if (availableUpdate) {
+    return `${copy.settings.updateAvailable} v${availableUpdate.version}`;
+  }
+
+  return copy.settings.updateDialogTitle;
+}
+
+function resolveUpdateDialogMessage(
+  copy: AppCopy,
+  status: "idle" | "checking" | "available" | "none" | "installing" | "ready" | "error",
+  message: string,
+) {
+  if (status === "checking") {
+    return copy.settings.updateChecking;
+  }
+
+  if (status === "installing") {
+    return copy.settings.updateInstallingDesc;
+  }
+
+  return message;
 }
 
 function describeRule(rule: UserFeedbackRuleVO) {

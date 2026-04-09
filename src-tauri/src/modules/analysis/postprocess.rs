@@ -91,7 +91,6 @@ mod tests {
             status: "active".to_string(),
             uptime: "1m".to_string(),
             location: "java".to_string(),
-            cpu: "0.0%".to_string(),
             memory: "1 MB".to_string(),
             updated_at: "now".to_string(),
             attribution: PortAttributionVO {

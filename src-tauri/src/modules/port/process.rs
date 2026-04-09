@@ -89,9 +89,6 @@ pub fn build_service(
     let uptime = process
         .map(|process| format_duration(process.run_time()))
         .unwrap_or_else(|| "-".to_string());
-    let cpu = process
-        .map(|process| format!("{:.1}%", process.cpu_usage()))
-        .unwrap_or_else(|| "-".to_string());
     let memory = process
         .map(|process| format_memory(process.memory()))
         .unwrap_or_else(|| "-".to_string());
@@ -108,7 +105,6 @@ pub fn build_service(
         status,
         uptime,
         location,
-        cpu,
         memory,
         updated_at: "now".to_string(),
         attribution,

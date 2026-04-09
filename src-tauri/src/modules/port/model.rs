@@ -101,8 +101,6 @@ pub struct PortServiceVO {
     pub uptime: String,
     /// 进程可执行文件路径。
     pub location: String,
-    /// CPU 使用率展示值。
-    pub cpu: String,
     /// 内存占用展示值。
     pub memory: String,
     /// 数据更新时间展示值。

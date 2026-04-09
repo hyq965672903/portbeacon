@@ -45,8 +45,6 @@ export type PortServiceVO = {
   uptime: string;
   /** 进程可执行文件路径。 */
   location: string;
-  /** CPU 使用率展示值。 */
-  cpu: string;
   /** 内存占用展示值。 */
   memory: string;
   /** 数据更新时间展示值。 */
