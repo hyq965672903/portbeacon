@@ -22,10 +22,18 @@ pub(crate) fn detect_service_fingerprint(port: u16, source: Option<&SourceRule>)
         return detect_local_http_fingerprint(port);
     }
 
-    if !matches!(source.display, "Docker" | "OrbStack") {
-        return None;
+    if matches!(source.display, "Docker" | "OrbStack") {
+        return detect_well_known_service(port);
     }
 
+    None
+}
+
+/// 根据高稳定性的常见服务端口补充数据库 / 中间件指纹。
+///
+/// 这些端口大多用于本地开发数据库或容器服务，哪怕 Docker Desktop 宿主进程被识别成应用本体，
+/// 也仍然应该落入开发端口视图。
+pub(crate) fn detect_well_known_service(port: u16) -> Option<String> {
     match port {
         3306 => Some("MySQL".to_string()),
         5432 => Some("PostgreSQL".to_string()),

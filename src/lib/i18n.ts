@@ -31,6 +31,7 @@ export const messages = {
       resetParams: "重置参数",
       saveChanges: "保存更改",
       switchAll: "全部切换",
+      openApp: "打开 PortBeacon",
     },
     dashboard: {
       openPorts: "开放端口",
@@ -273,6 +274,7 @@ export const messages = {
       resetParams: "Reset Parameters",
       saveChanges: "Save Changes",
       switchAll: "Switch All",
+      openApp: "Open PortBeacon",
     },
     dashboard: {
       openPorts: "Open Ports",

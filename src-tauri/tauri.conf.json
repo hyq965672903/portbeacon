@@ -12,11 +12,25 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "portbeacon",
         "width": 800,
         "height": 600,
         "minWidth": 800,
         "minHeight": 600
+      },
+      {
+        "label": "tray",
+        "title": "PortBeacon Tray",
+        "width": 360,
+        "height": 520,
+        "minWidth": 360,
+        "minHeight": 520,
+        "visible": false,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true
       }
     ],
     "security": {

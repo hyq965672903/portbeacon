@@ -17,16 +17,28 @@ pub(crate) fn classify(
     owner_location: &str,
     chain: &[ProcessEvidence],
 ) -> PortClassificationVO {
-    if let Some(owner_rule) = owner_source_rule(owner_name, owner_location, chain) {
+    let owner_rule = owner_source_rule(owner_name, owner_location, chain);
+
+    if let Some(owner_rule) = owner_rule {
         match owner_rule.kind {
             SourceKind::Lifestyle => return collapsed("lifestyle-app", "生活软件后台端口"),
             SourceKind::Browser => return collapsed("browser", "浏览器后台端口"),
             SourceKind::System => return collapsed("system-service", "系统服务端口"),
-            SourceKind::AiAgent => {
-                if known_service.is_some() {
-                    return visible("ai-agent");
-                }
+            _ => {}
+        }
+    }
 
+    if owner_is_system_path(owner_name, owner_location, chain) {
+        return collapsed("system-service", "系统服务端口");
+    }
+
+    if known_service.is_some() {
+        return visible("database");
+    }
+
+    if let Some(owner_rule) = owner_rule {
+        match owner_rule.kind {
+            SourceKind::AiAgent => {
                 return collapsed("tool-background", "AI Agent 辅助端口");
             }
             SourceKind::AiIde | SourceKind::Ide
@@ -38,16 +50,8 @@ pub(crate) fn classify(
         }
     }
 
-    if owner_is_system_path(owner_name, owner_location, chain) {
-        return collapsed("system-service", "系统服务端口");
-    }
-
     if framework.is_some() || launcher.is_some() {
         return visible("dev-server");
-    }
-
-    if known_service.is_some() {
-        return visible("database");
     }
 
     if meets_development_gate(score) {

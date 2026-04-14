@@ -5,7 +5,9 @@ use crate::modules::analysis::context::{
     collect_evidence, compact_label, confidence, detect_framework, detect_launcher, detect_project,
     detect_runtime, has_project_context,
 };
-use crate::modules::analysis::fingerprint::detect_service_fingerprint;
+use crate::modules::analysis::fingerprint::{
+    detect_service_fingerprint, detect_well_known_service,
+};
 use crate::modules::analysis::model::ProcessEvidence;
 use crate::modules::analysis::scoring::score_attribution;
 use crate::modules::analysis::source::{best_source, best_upstream_source, source_type_label};
@@ -25,7 +27,8 @@ pub fn infer_port_context(
     let launcher = detect_launcher(chain);
     let framework = detect_framework(chain, owner_name, owner_location);
     let runtime = detect_runtime(owner_name, owner_location, chain);
-    let known_service = detect_service_fingerprint(port, source);
+    let known_service =
+        detect_service_fingerprint(port, source).or_else(|| detect_well_known_service(port));
     let project = detect_project(chain);
     let has_project_context = has_project_context(chain);
     let score = score_attribution(
@@ -237,6 +240,47 @@ mod tests {
 
         assert_eq!(classification.visibility, "collapsed");
         assert_eq!(classification.category, "tool-background");
+    }
+
+    #[test]
+    fn docker_mysql_port_is_visible_as_database() {
+        let chain = vec![
+            evidence("launchd", "/sbin/launchd", None),
+            evidence(
+                "Docker Desktop",
+                "/Applications/Docker.app/Contents/MacOS/Docker Desktop",
+                None,
+            ),
+        ];
+
+        let (_, classification) = infer_port_context(
+            3306,
+            "Docker Desktop",
+            "/Applications/Docker.app/Contents/MacOS/Docker Desktop",
+            &chain,
+        );
+
+        assert_eq!(classification.visibility, "focused");
+        assert_eq!(classification.category, "database");
+    }
+
+    #[test]
+    fn unknown_redis_port_is_visible_as_database() {
+        let chain = vec![evidence(
+            "com.docker.backend",
+            "/Applications/Docker.app/Contents/MacOS/com.docker.backend",
+            None,
+        )];
+
+        let (_, classification) = infer_port_context(
+            6379,
+            "com.docker.backend",
+            "/Applications/Docker.app/Contents/MacOS/com.docker.backend",
+            &chain,
+        );
+
+        assert_eq!(classification.visibility, "focused");
+        assert_eq!(classification.category, "database");
     }
 
     #[test]

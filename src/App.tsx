@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 
@@ -8,6 +9,7 @@ import { HelpView } from "@/components/views/help-view";
 import { HistoryView } from "@/components/views/history-view";
 import { PortsView } from "@/components/views/ports-view";
 import { SettingsView } from "@/components/views/settings-view";
+import { TrayView } from "@/components/views/tray-view";
 import { navItems } from "@/data/menu";
 import { useLayoutMode } from "@/hooks/use-layout-mode";
 import { listHistory } from "@/lib/history";
@@ -24,6 +26,8 @@ import {
 import type { HistoryAction, HistoryEventVO, PortScope, PortServiceVO, UserFeedbackRuleVO, View } from "@/types/app";
 
 function App() {
+  const isTrayMode =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "tray";
   const [view, setView] = useState<View>("ports");
   const [locale, setLocale] = useState<Locale>("zh");
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
@@ -322,6 +326,29 @@ function App() {
     } finally {
       setStoppingPid(null);
     }
+  }
+
+  async function openMainWindow() {
+    try {
+      await invoke("show_main_window");
+      if (isTrayMode) {
+        await invoke("hide_tray_window");
+      }
+    } catch {
+      // noop
+    }
+  }
+
+  if (isTrayMode) {
+    return (
+      <TrayView
+        copy={copy}
+        services={services}
+        loading={portsLoading}
+        error={portsError}
+        onOpenMainWindow={openMainWindow}
+      />
+    );
   }
 
   return (

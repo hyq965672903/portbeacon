@@ -48,6 +48,40 @@ function compactSource(copy: AppCopy, service: PortServiceVO) {
   return parts.length > 0 ? parts.join(" · ") : copy.ports.sourceUnknown;
 }
 
+function isGenericDisplayName(name: string) {
+  return ["java", "node.js", "node", "python", "unknown process"].includes(name.trim().toLowerCase());
+}
+
+function serviceTitle(service: PortServiceVO) {
+  const { attribution } = service;
+  const displayName = attribution.displayName;
+
+  if (!isGenericDisplayName(displayName)) {
+    return displayName;
+  }
+
+  const discriminator = attribution.framework ?? attribution.project ?? attribution.launcher ?? attribution.sourceApp;
+  if (!discriminator) {
+    return displayName;
+  }
+
+  return `${discriminator} · ${displayName}`;
+}
+
+function serviceMeta(service: PortServiceVO) {
+  const pathParts = service.location.split("/").filter(Boolean);
+  const tail = pathParts.slice(-2).join("/");
+  const parts = [
+    service.attribution.project,
+    service.attribution.framework,
+    service.attribution.launcher,
+    service.pid > 0 ? `PID ${service.pid}` : null,
+    tail && tail !== "-" ? tail : null,
+  ].filter((value, index, all) => value && all.indexOf(value) === index);
+
+  return parts.join(" · ");
+}
+
 function ProcessTree({ node, depth = 0 }: { node: ProcessTreeNodeVO; depth?: number }) {
   return (
     <div className="relative">
@@ -230,7 +264,10 @@ function PortTableContent({
                 <div className="flex min-w-0 items-center gap-1.5">
                   <div className="size-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{service.attribution.displayName}</p>
+                    <p className="truncate font-medium">{serviceTitle(service)}</p>
+                    <p className="truncate text-[11px] text-[var(--muted-foreground)]">
+                      {serviceMeta(service) || compactSource(copy, service)}
+                    </p>
                   </div>
                 </div>
               </TableCell>
